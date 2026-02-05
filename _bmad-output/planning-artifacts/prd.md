@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys]
+stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain]
 inputDocuments:
   - "product-brief-Controlmyentries-2026-02-05.md"
 workflowType: 'prd'
@@ -148,3 +148,43 @@ classification:
 | Marc PME | Scalabilité vers le bas (petits GL), même pertinence sur petit volume |
 | Sophie edge case | Validation du format d'entrée, messages d'erreur clairs, rejet gracieux des fichiers mal formatés |
 | DAF résultats | Onglet synthèse dans l'Excel de sortie, métriques agrégées (détectées/corrigées/faux positifs) |
+
+## Domain-Specific Requirements
+
+### Modèle de données et confidentialité
+
+- **Architecture stateless** : modèle ilovepdf — upload → traitement en mémoire → téléchargement direct. Aucune donnée comptable n'est persistée côté serveur après le traitement.
+- **Pas de stockage** : ni le GL ni le rapport de sortie ne sont conservés. Le serveur ne voit les données que le temps du traitement.
+- **RGPD simplifié** : pas de données personnelles stockées, pas de base de données utilisateur pour le MVP. Le traitement est éphémère.
+- **Hébergement SaaS** : service accessible sur internet, pas d'installation côté client.
+
+### Gestion de la baseline N-1
+
+- **Question architecturale ouverte** : la baseline N-1 (12 mois de statistiques de référence) est nécessaire pour le Z-score adaptatif. Deux options :
+  - **Option A — Double upload** : l'utilisateur uploade à chaque clôture le GL N-1 complet + le GL du mois courant. Zéro persistence, mais friction utilisateur (2 fichiers à chaque fois).
+  - **Option B — Baseline pré-calculée** : au premier usage, l'utilisateur uploade le GL N-1. L'outil calcule les statistiques de référence (moyenne, écart-type par nœud) et génère un fichier « baseline.json » que l'utilisateur télécharge. À chaque clôture, il uploade ce fichier baseline + le GL du mois. Aucune donnée persistée côté serveur, mais la baseline vit côté client.
+- **Recommandation** : Option B — la baseline pré-calculée est un fichier léger (quelques Ko pour 500 nœuds) que Sophie garde sur son poste. Moins de friction, même niveau de confidentialité.
+
+### Rigueur statistique
+
+- **Seuils initiaux** : |Z| > 2 et variation > 20% sont des hypothèses de départ, à calibrer pendant le pilote de 3 mois sur données réelles.
+- **Saisonnalité** : la comparaison M vs M-12 (même mois de l'année précédente) neutralise la saisonnalité naturelle. Limitation connue : si un événement exceptionnel a eu lieu en M-12, il faussera la comparaison.
+- **Premiers mois d'exercice** : en janvier (premier mois), le Z-score n'a qu'un seul point de l'exercice courant. La baseline N-1 compense, mais la fiabilité statistique est plus faible. L'outil doit signaler un indice de confiance réduit sur les premiers mois.
+- **Faux sentiment de sécurité** : l'outil doit afficher un disclaimer clair : « Cet outil est une aide à la détection, pas un certificat d'absence d'anomalie. »
+
+### Format d'entrée du GL
+
+- **Diversité des exports** : chaque logiciel comptable (Sage, Cegid, EBP, Quadra, etc.) exporte un format différent.
+- **Colonnes minimales requises** : Compte Général, Section Analytique, Montant, Date (ou Période/Mois).
+- **Mapping MVP** : format d'entrée standardisé avec colonnes nommées. L'utilisateur doit adapter son export ou utiliser un template fourni.
+- **Mapping v2** : interface de mapping configurable (« quelle colonne est le Compte G ? ») pour supporter différents formats nativement.
+
+### Risques et mitigations
+
+| Risque | Impact | Mitigation |
+|---|---|---|
+| GL mal formaté uploadé | Résultats faux ou crash | Validation stricte du format avant traitement, rejet avec message explicite |
+| Seuils mal calibrés | Trop de faux positifs → perte de confiance | Pilote de 3 mois, seuils ajustables en config |
+| Baseline N-1 absente ou corrompue | Z-score impossible | Détection et message d'erreur, mode dégradé Passe 1 seule |
+| Données sensibles en transit | Fuite de données comptables | HTTPS obligatoire, traitement éphémère, zéro log de données |
+| Événement exceptionnel en M-12 | Fausse anomalie saisonnière | Signaler l'indice de confiance, permettre exclusion de mois atypiques en v2 |
