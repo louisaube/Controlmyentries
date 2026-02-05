@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation-skipped, step-07-project-type, step-08-scoping]
+stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation-skipped, step-07-project-type, step-08-scoping, step-09-functional]
 inputDocuments:
   - "product-brief-Controlmyentries-2026-02-05.md"
 workflowType: 'prd'
@@ -335,3 +335,62 @@ L'objectif est de valider que l'entonnoir 3 passes détecte des anomalies réell
 
 **Risques ressources :**
 - Moins de ressources que prévu → MVP réductible à Passe 1 seule + Excel basique
+
+## Functional Requirements
+
+### Data Import & Validation
+
+- **FR1** : L'utilisateur peut uploader un fichier Excel contenant un export du Grand Livre (GL)
+- **FR2** : Le système valide le fichier uploadé pour la présence des colonnes requises (Compte Général, Section Analytique, Montant, Date/Période)
+- **FR3** : Le système rejette les fichiers invalides avec un message d'erreur explicite listant les colonnes détectées vs attendues
+- **FR4** : L'utilisateur peut uploader un fichier baseline pré-calculé (JSON) pour la comparaison statistique
+- **FR5** : L'utilisateur peut générer un fichier baseline en uploadant un GL N-1 complet (12 mois)
+- **FR6** : Le système produit un fichier baseline téléchargeable que l'utilisateur conserve sur son poste
+- **FR7** : L'utilisateur peut soumettre simultanément un fichier baseline + un GL du mois courant pour lancer l'analyse
+
+### Anomaly Detection — Pass 1 (Binary Tests)
+
+- **FR8** : Le système détecte la disparition d'un nœud (nœud actif les mois précédents, absent au mois M)
+- **FR9** : Le système détecte l'apparition d'un nœud (nœud absent de l'historique, présent au mois M)
+- **FR10** : Le système détecte une variation brute (écart > 20% par rapport à la tendance)
+- **FR11** : Le système détecte une interruption de récurrence (suite d'écritures régulières qui s'arrête)
+
+### Anomaly Detection — Pass 2 (Statistical Calibration)
+
+- **FR12** : Le système calcule un Z-score adaptatif par nœud (moyenne et écart-type propres à chaque nœud Compte G × Analytique)
+- **FR13** : Le système compare le mois courant M avec le même mois de l'année précédente M-12 pour neutraliser la saisonnalité
+- **FR14** : Le système signale les anomalies dont |Z| > 2
+- **FR15** : Le système fonctionne en mode dégradé (Passe 1 seule) lorsque la baseline est insuffisante ou absente
+
+### Report Generation — Pass 3 (Restitution)
+
+- **FR16** : Le système génère un fichier Excel enrichi avec un onglet par anomalie confirmée
+- **FR17** : Chaque onglet d'anomalie contient un constat factuel de Niveau 1 (description de ce qui s'est passé)
+- **FR18** : Chaque onglet d'anomalie contient les données statistiques de Niveau 2 (Z-score, moyenne, écart-type, historique)
+- **FR19** : Le système génère un onglet Synthèse avec les métriques agrégées (nombre total d'anomalies, types, répartition)
+- **FR20** : L'utilisateur peut télécharger le rapport généré au format Excel
+
+### Real-Time Processing Feedback
+
+- **FR21** : Le système affiche une barre de progression pendant le traitement du fichier
+- **FR22** : Le système communique les étapes de traitement en temps réel (validation, Passe 1, Passe 2, Passe 3, terminé)
+- **FR23** : Le système affiche le temps de traitement total à la fin de l'analyse
+
+### Confidence & Transparency
+
+- **FR24** : Le système affiche un indice de confiance réduit pour les anomalies détectées sur les premiers mois de l'exercice
+- **FR25** : Le système affiche un disclaimer permanent : « Cet outil est une aide à la détection, pas un certificat d'absence d'anomalie »
+- **FR26** : Le système montre la base statistique de chaque détection (données chiffrées, pas une boîte noire)
+
+### Landing Page & Product Discovery
+
+- **FR27** : Les visiteurs peuvent accéder à une landing page présentant le produit, les cas d'usage et la proposition de valeur
+- **FR28** : La landing page est optimisée pour les moteurs de recherche (SEO)
+- **FR29** : La landing page contient un appel à l'action dirigeant vers l'outil
+
+### Accessibility
+
+- **FR30** : Toutes les interactions sont accessibles via navigation clavier
+- **FR31** : Le système fournit une alternative au drag-and-drop pour l'upload de fichier
+- **FR32** : Le système annonce les étapes de progression et changements d'état aux lecteurs d'écran
+- **FR33** : Les messages d'erreur sont programmatiquement liés à leur source
