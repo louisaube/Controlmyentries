@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation-skipped, step-07-project-type]
+stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation-skipped, step-07-project-type, step-08-scoping]
 inputDocuments:
   - "product-brief-Controlmyentries-2026-02-05.md"
 workflowType: 'prd'
@@ -261,3 +261,77 @@ Controlmyentries est une **SPA (Single Page Application)** de type outil de trai
 - **HTTPS obligatoire** : données comptables sensibles en transit
 - **CORS** : configuration stricte (même domaine)
 - **CSP** : Content Security Policy restrictive
+
+## Project Scoping & Phased Development
+
+### MVP Strategy & Philosophy
+
+**Approche MVP : Problem-Solving MVP**
+L'objectif est de valider que l'entonnoir 3 passes détecte des anomalies réelles sur des données réelles. Pas de polish, pas de features avancées — juste la preuve que ça marche et que ça fait gagner du temps.
+
+**Ressources MVP :** 1 développeur full-stack (Python + front SPA). Pas besoin d'équipe data science — les statistiques sont classiques (Z-score, moyenne, écart-type).
+
+### MVP Feature Set (Phase 1)
+
+**Parcours supportés :**
+- Sophie happy path (contrôle mensuel)
+- Sophie onboarding (chargement baseline N-1)
+- Sophie edge case (fichier mal formaté → rejet propre)
+- Marc PME (même outil, volume plus petit)
+- DAF (onglet synthèse dans l'Excel de sortie)
+
+**Must-Have :**
+
+| Feature | Justification |
+|---|---|
+| Upload Excel GL via web | Point d'entrée unique |
+| Upload/download baseline pré-calculée (Option B) | Stateless + Z-score possible |
+| Passe 1 — 4 tests binaires | Détection de base : disparition, apparition, variation, récurrence |
+| Passe 2 — Z-score adaptatif par nœud | Calibrage statistique, neutralisation saisonnalité M-12 |
+| Passe 3 — Niveaux 1 et 2 | Restitution exploitable sans IA |
+| Excel de sortie multi-onglets | Format familier, un onglet par anomalie |
+| Onglet Synthèse | Pour le DAF, métriques agrégées |
+| Validation format d'entrée | Rejet propre avec message si colonnes manquantes |
+| Barre de progression WebSocket | Feedback temps réel pendant les 30s de traitement |
+| Landing page SEO | Acquisition et crédibilité |
+| HTTPS | Données comptables sensibles |
+| Disclaimer | « Aide à la détection, pas certificat d'absence d'anomalie » |
+
+**Explicitement hors MVP :**
+- Authentification / comptes utilisateurs
+- Stockage de données côté serveur
+- Niveau 3 IA (LLM)
+- Configuration des seuils via interface
+- Mapping de colonnes configurable
+- Support multi-formats comptables
+
+### Post-MVP Features
+
+**Phase 2 — Intelligence (après pilote validé) :**
+- Niveau 3 IA : pistes d'investigation LLM avec disclaimer systématique
+- Interface de mapping colonnes configurable (Sage, Cegid, EBP nativement)
+- Configuration des seuils par nœud via interface
+- Zoom PCG pour contextualisation
+- Affinage automatique basé sur feedback (marquer les faux positifs)
+- Comptes utilisateurs + historique des baselines
+
+**Phase 3 — Plateforme (si traction confirmée) :**
+- Dashboard web avec suivi historique des contrôles
+- Connecteurs ERP natifs (import automatisé)
+- Gestion multi-sociétés et consolidation
+- API pour intégration workflows existants
+- Export PDF et reporting automatisé
+- Audit trail pour conformité
+
+### Risk Mitigation Strategy
+
+**Risques techniques :**
+- Seuils non calibrés → Pilote 3 mois, seuils ajustables en config côté code
+- Z-score faible premiers mois → Indice de confiance affiché, mode dégradé Passe 1 seule
+
+**Risques marché :**
+- Contrôleurs ne font pas confiance → Niveaux 1+2 montrent les données brutes, pas de boîte noire
+- Marché trop petit → Pilote gratuit, mesure de l'intérêt avant investissement v2
+
+**Risques ressources :**
+- Moins de ressources que prévu → MVP réductible à Passe 1 seule + Excel basique
