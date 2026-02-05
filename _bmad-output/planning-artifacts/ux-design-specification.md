@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3]
+stepsCompleted: [1, 2, 3, 4]
 inputDocuments:
   - "prd.md"
   - "product-brief-Controlmyentries-2026-02-05.md"
@@ -85,3 +85,56 @@ Le modèle mental est celui du **photocopieur intelligent** : on pose le documen
 3. **Confiance par la transparence** : chaque détection montre ses données (Z-score, moyenne, écart-type, historique). Pas de boîte noire. L'utilisateur peut vérifier et apprendre.
 4. **Disclosure progressive** : interface minimaliste en surface → richesse statistique dans le rapport Excel. La complexité est dans le livrable, pas dans l'outil.
 5. **L'attente est le spectacle** : les 30 secondes de traitement ne sont pas un "temps mort" mais un moment de revelation progressive (compteur d'anomalies, étapes franchies).
+
+## Desired Emotional Response
+
+### Primary Emotional Goals
+
+| Émotion cible | Moment | Traduction UX |
+|---|---|---|
+| **Soulagement** | Après l'analyse | "Enfin, je n'ai plus à scanner des colonnes pendant 4 heures" |
+| **Confiance** | Tout au long | "L'outil me montre ses calculs, je peux vérifier" |
+| **Efficacité** | Upload → résultat | "C'est fait en 30 secondes, je passe à autre chose" |
+| **Découverte** | Lecture du rapport | "Il a trouvé un oubli de CCA que je n'avais pas vu" |
+
+L'émotion dominante est le **soulagement productif** — la sensation qu'une tâche pénible et risquée (le contrôle visuel TCD) est désormais automatisée et fiable.
+
+### Emotional Journey Mapping
+
+| Étape du parcours | Émotion attendue | Émotion à éviter |
+|---|---|---|
+| **Découverte / Landing** | Curiosité professionnelle, crédibilité immédiate | Méfiance ("encore un outil gadget") |
+| **Premier upload (onboarding)** | Guidé, rassuré | Confusion ("quel fichier mettre où ?") |
+| **Attente (30s)** | Anticipation active, impatience positive | Anxiété ("ça marche ?"), ennui |
+| **Réception du rapport** | Satisfaction immédiate, "ça a marché" | Déception ("c'est tout ?") |
+| **Lecture détaillée** | Découverte, "aha moment" | Confusion ("je ne comprends pas les scores") |
+| **Retour M+1** | Familiarité, routine efficace | Friction ("où est mon baseline ?") |
+| **Erreur fichier** | Compréhension, action claire | Frustration, culpabilité |
+
+### Micro-Emotions
+
+- **Confiance vs Scepticisme** : CRITIQUE. Sophie est experte comptable — elle ne fera confiance qu'à un outil qui montre ses méthodes. Chaque Z-score affiché, chaque donnée source visible = confiance construite.
+- **Accomplissement vs Frustration** : Sophie doit sentir qu'elle a FAIT son travail de contrôle, pas que l'outil l'a remplacée. Le rapport est son livrable, elle l'a "produit".
+- **Excitation vs Anxiété** : pendant les 30 secondes, le compteur d'anomalies transforme l'anxiété de l'attente en excitation de la découverte.
+- **Delight vs Simple satisfaction** : on vise la satisfaction fiable (comptable), pas le delight spectaculaire. Un outil sérieux, pas un jouet.
+
+### Design Implications
+
+| Émotion cible | Implication UX |
+|---|---|
+| Soulagement | Le flow complet upload→résultat doit être réalisable en < 2 minutes |
+| Confiance | Transparence des calculs dans le rapport, pas de boîte noire |
+| Efficacité | Zéro étape superflue, auto-download du rapport |
+| Découverte | Compteur d'anomalies en temps réel, onglets par catégorie dans Excel |
+| Guidé (onboarding) | Copie explicative inline, zones visuellement distinctes baseline/GL |
+| Pas de confusion | Messages d'erreur avec colonnes détectées vs attendues |
+| Anticipation (attente) | Barre de progression 5 étapes + compteur d'anomalies live |
+| Familiarité (retour) | localStorage pour le dernier baseline, état visuel "prêt à relancer" |
+
+### Emotional Design Principles
+
+1. **Sérieux comptable, pas ludique** : ton professionnel, pas de gamification. Les comptables veulent un outil fiable, pas un jouet. Pas d'animations gratuites, pas d'emojis, pas de confetti.
+2. **Transparence = confiance** : ne jamais cacher un calcul. Si l'outil détecte une anomalie, l'utilisateur doit pouvoir comprendre POURQUOI en < 10 secondes.
+3. **L'attente est investie** : les 30 secondes sont conçues comme un moment de valeur (progression + compteur), pas comme un temps mort à minimiser visuellement.
+4. **Erreur = aide, pas reproche** : chaque message d'erreur guide vers la solution. Jamais de "fichier invalide" sans explication actionnable.
+5. **L'utilisateur reste l'expert** : l'outil détecte, l'utilisateur décide. Le rapport est un assistant, pas un juge. Vocabulaire : "détecté", "suggéré", jamais "erreur" ou "faute".
