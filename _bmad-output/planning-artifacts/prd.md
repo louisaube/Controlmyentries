@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation-skipped]
+stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation-skipped, step-07-project-type]
 inputDocuments:
   - "product-brief-Controlmyentries-2026-02-05.md"
 workflowType: 'prd'
@@ -188,3 +188,76 @@ classification:
 | Baseline N-1 absente ou corrompue | Z-score impossible | Détection et message d'erreur, mode dégradé Passe 1 seule |
 | Données sensibles en transit | Fuite de données comptables | HTTPS obligatoire, traitement éphémère, zéro log de données |
 | Événement exceptionnel en M-12 | Fausse anomalie saisonnière | Signaler l'indice de confiance, permettre exclusion de mois atypiques en v2 |
+
+## Web App Specific Requirements
+
+### Project-Type Overview
+
+Controlmyentries est une **SPA (Single Page Application)** de type outil de traitement, modèle ilovepdf. Interface minimale : zone d'upload, barre de progression temps réel, bouton de téléchargement. Pas de navigation multi-pages, pas d'authentification pour le MVP. Une **landing page** distincte présente le produit et dirige vers l'outil.
+
+### Browser Matrix
+
+| Navigateur | Support | Notes |
+|---|---|---|
+| Chrome (dernières 2 versions) | Full | Cible principale |
+| Edge (dernières 2 versions) | Full | Chromium-based, même moteur |
+| Firefox | Non requis MVP | Peut fonctionner mais non testé |
+| Safari | Non requis MVP | Peut fonctionner mais non testé |
+| IE11 | Non supporté | Obsolète |
+
+### Responsive Design
+
+- **Desktop-first** : l'usage principal est sur poste de travail en entreprise
+- **Tablette** : fonctionnel mais non optimisé (usage marginal)
+- **Mobile** : non ciblé — on n'uploade pas un GL de 800 000 lignes depuis un téléphone
+
+### Performance Targets
+
+| Métrique | Cible | Mesure |
+|---|---|---|
+| First Contentful Paint (FCP) | < 1.5s | Lighthouse |
+| Time to Interactive (TTI) | < 3s | Lighthouse |
+| Upload start to progress bar | < 500ms | UX perception |
+| Traitement serveur | ≤ 30s (GL standard) | Chronomètre intégré |
+| Download ready → fichier reçu | < 2s | Taille fichier résultat |
+
+### Real-Time Communication
+
+- **WebSocket** (ou SSE — Server-Sent Events) pour la barre de progression pendant le traitement
+- Étapes de progression à communiquer au client :
+  1. « Upload reçu, validation du format... »
+  2. « Passe 1 — Tests binaires en cours... »
+  3. « Passe 2 — Calibrage statistique... »
+  4. « Passe 3 — Génération du rapport... »
+  5. « Terminé — Téléchargez votre rapport »
+- Fallback polling si WebSocket indisponible (proxy d'entreprise restrictif)
+
+### SEO Strategy
+
+- **Landing page** : page de présentation dédiée, optimisée SEO, avec description du produit, cas d'usage, témoignages, CTA vers l'outil
+- **Mots-clés cibles** : « contrôle comptable automatique », « détection anomalies GL », « outil contrôle de gestion »
+- **L'outil SPA** : pas de SEO nécessaire (contenu dynamique, pas indexable)
+- **Meta tags et Open Graph** : pour le partage sur réseaux sociaux et LinkedIn (cible B2B)
+
+### Accessibilité — WCAG 2.2 AAA
+
+- **Niveau cible** : WCAG 2.2 **AAA** (niveau le plus exigeant)
+- **Interactions clés à rendre accessibles** :
+  - Upload fichier : drag & drop + bouton classique, label accessible
+  - Barre de progression : `role="progressbar"`, `aria-valuenow`, annonces live region
+  - Bouton téléchargement : focus visible, label explicite
+  - Messages d'erreur : `role="alert"`, liés au champ en erreur
+- **Contraste AAA** : ratio minimum **7:1** pour le texte normal, **4.5:1** pour le texte large
+- **Navigation clavier** : toutes les actions faisables au clavier (Tab, Enter, Escape)
+- **Nouveautés WCAG 2.2** : focus not obscured (2.4.11), dragging movements alternative (2.5.7), target size minimum 24×24px (2.5.8)
+- **AAA spécifique** : pas de limite de temps (2.2.3), pas de contenu clignotant (2.3.2), texte redimensionnable à 200% sans perte (1.4.8), navigation cohérente (3.2.3)
+
+### Implementation Considerations
+
+- **Framework SPA** : à définir en architecture (React, Vue, Svelte, ou HTMX + Alpine pour la simplicité)
+- **Backend** : Python (FastAPI recommandé — async, performant, WebSocket natif)
+- **Landing page** : peut être statique (HTML/CSS) ou générée (Next.js, Astro) — séparée de la SPA outil
+- **File upload** : limite de taille à définir (GL de 1M lignes ≈ 50-100 Mo en xlsx)
+- **HTTPS obligatoire** : données comptables sensibles en transit
+- **CORS** : configuration stricte (même domaine)
+- **CSP** : Content Security Policy restrictive
