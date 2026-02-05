@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation-skipped, step-07-project-type, step-08-scoping, step-09-functional]
+stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation-skipped, step-07-project-type, step-08-scoping, step-09-functional, step-10-nonfunctional]
 inputDocuments:
   - "product-brief-Controlmyentries-2026-02-05.md"
 workflowType: 'prd'
@@ -394,3 +394,51 @@ L'objectif est de valider que l'entonnoir 3 passes détecte des anomalies réell
 - **FR31** : Le système fournit une alternative au drag-and-drop pour l'upload de fichier
 - **FR32** : Le système annonce les étapes de progression et changements d'état aux lecteurs d'écran
 - **FR33** : Les messages d'erreur sont programmatiquement liés à leur source
+
+## Non-Functional Requirements
+
+### Performance
+
+- **NFR1** : Le traitement end-to-end (upload → calcul → génération Excel) s'exécute en ≤ 30 secondes pour un GL de 500 nœuds / 50 000 lignes
+- **NFR2** : Le traitement reste sous 2 minutes pour un GL de 1 000 000 de lignes
+- **NFR3** : La barre de progression se met à jour au moins toutes les 5 secondes pendant le traitement
+- **NFR4** : Le First Contentful Paint de la SPA est < 1.5 seconde
+- **NFR5** : Le Time to Interactive de la SPA est < 3 secondes
+- **NFR6** : Le fichier Excel de sortie se génère en < 5 secondes quel que soit le nombre d'anomalies
+
+### Security
+
+- **NFR7** : Toutes les communications client-serveur utilisent HTTPS (TLS 1.2+)
+- **NFR8** : Aucune donnée comptable n'est persistée côté serveur après le traitement (architecture stateless)
+- **NFR9** : Les logs contiennent uniquement des métadonnées (nombre de lignes, nombre de nœuds, temps de traitement) — jamais de valeurs comptables, montants, comptes ou libellés
+- **NFR10** : Le serveur ne conserve ni le fichier uploadé ni le fichier généré après téléchargement
+- **NFR11** : Le Content Security Policy (CSP) interdit le chargement de scripts externes non contrôlés
+- **NFR12** : Le CORS est configuré en mode strict (même domaine uniquement)
+
+### Scalability
+
+- **NFR13** : Le système supporte 10 traitements simultanés au MVP (1 par contrôleur actif)
+- **NFR14** : Le système supporte 50 traitements simultanés en phase de croissance (12 mois) sans dégradation > 20% des temps de traitement
+- **NFR15** : Le traitement est isolé par requête (un GL lent ne bloque pas les autres)
+- **NFR16** : Un mécanisme de queue (file d'attente) est activé lorsque le nombre de traitements simultanés dépasse le seuil configuré, avec message d'attente à l'utilisateur
+
+### Accessibility
+
+- **NFR17** : L'interface atteint le niveau WCAG 2.2 AAA
+- **NFR18** : Le ratio de contraste texte/fond est ≥ 7:1 pour le texte normal, ≥ 4.5:1 pour le texte large
+- **NFR19** : Toutes les fonctionnalités sont utilisables au clavier seul (sans souris)
+- **NFR20** : Les changements d'état (progression, erreurs, résultats) sont annoncés aux technologies d'assistance via ARIA live regions
+- **NFR21** : Les cibles interactives ont une taille minimale de 24×24 pixels (WCAG 2.5.8)
+- **NFR22** : Le texte est redimensionnable à 200% sans perte de fonctionnalité (WCAG 1.4.8)
+
+### Reliability
+
+- **NFR23** : Le service est disponible à 99% pendant les heures ouvrées (8h-20h, lundi-vendredi), et à **99.9% les 5 premiers jours ouvrés de chaque mois** (période de clôture)
+- **NFR24** : La sortie est **atomique** — le système ne produit jamais de résultat partiel. Si une erreur survient en cours de traitement, aucun fichier n'est généré et un message d'erreur explicite est affiché
+- **NFR25** : Le système redémarre automatiquement en cas de crash du processus serveur
+- **NFR26** : Le temps de rétablissement après incident est < 30 minutes
+
+### File Limits & Timeouts
+
+- **NFR27** : Le système rejette les fichiers dépassant **20 Mo** avec un message explicite
+- **NFR28** : Le système impose un timeout de 5 minutes maximum par traitement — au-delà, le traitement est interrompu avec un message d'erreur
