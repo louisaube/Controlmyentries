@@ -345,14 +345,14 @@ Controlmyentries est une **SPA (Single Page Application)** de type outil de trai
 
 ### Confidence & Transparency
 
-- **FR24** : Le système affiche un indice de confiance réduit pour les premiers mois de l'exercice
+- **FR24** : Le système affiche un indice de confiance (%) basé sur le nombre de mois d'historique disponibles. Si < 6 mois : badge « Confiance limitée » visible sur chaque anomalie détectée
 - **FR25** : Le système affiche un disclaimer permanent : « Aide à la détection, pas certificat d'absence d'anomalie »
 - **FR26** : Le système montre la base statistique de chaque détection (données chiffrées, pas de boîte noire)
 
 ### Landing Page & Product Discovery
 
 - **FR27** : Les visiteurs accèdent à une landing page présentant le produit, les cas d'usage et la proposition de valeur
-- **FR28** : La landing page est optimisée SEO
+- **FR28** : La landing page atteint un score Lighthouse SEO ≥ 90 et inclut meta tags, Open Graph, et structured data
 - **FR29** : La landing page contient un appel à l'action dirigeant vers l'outil
 
 ### Accessibility
@@ -369,9 +369,9 @@ Controlmyentries est une **SPA (Single Page Application)** de type outil de trai
 - **NFR1** : Traitement end-to-end ≤ 30 secondes pour un GL de 500 nœuds / 50 000 lignes
 - **NFR2** : Traitement ≤ 2 minutes pour un GL de 1 000 000 de lignes
 - **NFR3** : Barre de progression mise à jour au moins toutes les 5 secondes
-- **NFR4** : First Contentful Paint < 1.5 seconde
-- **NFR5** : Time to Interactive < 3 secondes
-- **NFR6** : Génération Excel de sortie < 5 secondes
+- **NFR4** : First Contentful Paint < 1.5 seconde (mesuré par Lighthouse)
+- **NFR5** : Time to Interactive < 3 secondes (mesuré par Lighthouse)
+- **NFR6** : Génération Excel de sortie < 5 secondes (mesuré par timer serveur dans les logs)
 
 ### Security
 
@@ -400,10 +400,10 @@ Controlmyentries est une **SPA (Single Page Application)** de type outil de trai
 
 ### Reliability
 
-- **NFR23** : Disponibilité 99% heures ouvrées (8h-20h, lun-ven), **99.9% les 5 premiers jours ouvrés** (période de clôture)
+- **NFR23** : Disponibilité 99% heures ouvrées (8h-20h, lun-ven), **99.9% les 5 premiers jours ouvrés** (période de clôture). Mesuré par monitoring externe (ex: Uptime Robot, check HTTP toutes les 5 min)
 - **NFR24** : Sortie **atomique** — jamais de résultat partiel. Erreur en cours de traitement = aucun fichier généré + message explicite
 - **NFR25** : Redémarrage automatique en cas de crash serveur
-- **NFR26** : Temps de rétablissement < 30 minutes
+- **NFR26** : Temps de rétablissement < 30 minutes (mesuré par test de recovery documenté : simulation de crash → mesure du délai jusqu'à réponse HTTP 200)
 
 ### File Limits & Timeouts
 
