@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1]
+stepsCompleted: [1, 2]
 inputDocuments:
   - "prd.md"
   - "architecture.md"
@@ -128,8 +128,90 @@ This document provides the complete epic and story breakdown for Controlmyentrie
 
 ### FR Coverage Map
 
-{{requirements_coverage_map}}
+| FR | Epic | Description |
+|---|---|---|
+| FR1 | Epic 2 | Upload Excel GL |
+| FR2 | Epic 2 | Validation colonnes |
+| FR3 | Epic 2 | Rejet avec message |
+| FR4 | Epic 3 | Upload baseline JSON |
+| FR5 | Epic 3 | Générer baseline depuis N-1 |
+| FR6 | Epic 3 | Download baseline |
+| FR7 | Epic 6 | Soumettre baseline + GL |
+| FR8 | Epic 4 | Disparition nœud |
+| FR9 | Epic 4 | Apparition nœud |
+| FR10 | Epic 4 | Variation brute |
+| FR11 | Epic 4 | Interruption récurrence |
+| FR12 | Epic 4 | Z-score adaptatif |
+| FR13 | Epic 4 | Comparaison M vs M-12 |
+| FR14 | Epic 4 | Signalement |Z| > 2 |
+| FR15 | Epic 4 | Mode dégradé |
+| FR16 | Epic 5 | Excel multi-onglets |
+| FR17 | Epic 5 | Niveau 1 constat |
+| FR18 | Epic 5 | Niveau 2 statistiques |
+| FR19 | Epic 5 | Onglet Synthèse |
+| FR20 | Epic 5 | Download rapport |
+| FR21 | Epic 7 | Barre progression |
+| FR22 | Epic 7 | Étapes temps réel |
+| FR23 | Epic 7 | Temps total |
+| FR24 | Epic 8 | Indice confiance |
+| FR25 | Epic 8 | Disclaimer |
+| FR26 | Epic 8 | Base statistique visible |
+| FR27 | Epic 9 | Landing page |
+| FR28 | Epic 9 | Lighthouse SEO ≥ 90 |
+| FR29 | Epic 9 | CTA vers outil |
+| FR30 | Epic 10 | Navigation clavier |
+| FR31 | Epic 2 | Alternative drag-drop |
+| FR32 | Epic 10 | Annonces screen reader |
+| FR33 | Epic 10 | Erreurs liées source |
 
 ## Epic List
 
-{{epics_list}}
+### Epic 1: Project Skeleton
+Infrastructure de base fonctionnelle pour le développement.
+**FRs covered:** Aucun (prérequis technique)
+**Scope:** Setup Replit, api/, frontend/, health check, static serving
+
+### Epic 2: File Upload & Validation
+L'utilisateur peut uploader un GL et voir s'il est valide.
+**FRs covered:** FR1, FR2, FR3, FR31
+**Scope:** DropZone, FileCard, validation colonnes, messages d'erreur
+
+### Epic 3: Baseline Management
+L'utilisateur peut créer sa baseline pour les analyses futures.
+**FRs covered:** FR4, FR5, FR6
+**Scope:** Upload GL N-1, calcul statistiques, download baseline.json
+
+### Epic 4: Anomaly Detection Engine
+Le système détecte les anomalies dans le GL (Pass 1 + Pass 2).
+**FRs covered:** FR8, FR9, FR10, FR11, FR12, FR13, FR14, FR15
+**Scope:** 4 détecteurs binaires, Z-score adaptatif, mode dégradé
+
+### Epic 5: Report Generation
+L'utilisateur télécharge un rapport Excel exploitable.
+**FRs covered:** FR16, FR17, FR18, FR19, FR20
+**Scope:** Excel multi-onglets, Niveau 1+2, Synthèse DAF
+
+### Epic 6: Full Analysis Flow
+Sophie peut faire son contrôle mensuel end-to-end.
+**FRs covered:** FR7
+**Scope:** Upload baseline + GL → pipeline complet → rapport
+
+### Epic 7: Real-Time Feedback
+L'utilisateur voit la progression pendant le traitement.
+**FRs covered:** FR21, FR22, FR23
+**Scope:** WebSocket, 5 étapes, compteur anomalies, temps total
+
+### Epic 8: Trust & Transparency
+L'utilisateur comprend et fait confiance aux résultats.
+**FRs covered:** FR24, FR25, FR26
+**Scope:** Indice confiance, disclaimer, données statistiques visibles
+
+### Epic 9: Landing Page
+Les prospects découvrent le produit.
+**FRs covered:** FR27, FR28, FR29
+**Scope:** Page SEO, meta tags, Open Graph, CTA
+
+### Epic 10: Accessibility Polish
+Tous les utilisateurs peuvent utiliser l'outil.
+**FRs covered:** FR30, FR32, FR33
+**Scope:** WCAG 2.2 AAA, clavier, ARIA, focus management
