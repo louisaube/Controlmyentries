@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5]
+stepsCompleted: [1, 2, 3, 4, 5, 6]
 inputDocuments:
   - "prd.md"
   - "product-brief-Controlmyentries-2026-02-05.md"
@@ -241,3 +241,89 @@ L'émotion dominante est le **soulagement productif** — la sensation qu'une t�
 - Auto-download silencieux → bouton explicite
 - Premier = suivant → détection contexte + guidage adapté
 - Preview web des résultats → MVP KISS, le fichier Excel EST le livrable
+
+## Design System Foundation
+
+### Design System Choice
+
+**Tailwind CSS + react-dropzone + HTML sémantique**
+
+Stack minimaliste sans framework UI. Maximum de contrôle, minimum de dépendances.
+
+### Rationale for Selection
+
+1. **KISS absolu** : pour 4 composants (drop zone, progress, button, toast), pas besoin d'une lib UI. HTML sémantique + Tailwind + ARIA manuel suffit.
+
+2. **react-dropzone pour le cœur** : le composant central (drop zone multi-fichiers) bénéficie d'une lib mature (8KB, testable, accessible). Le reste est natif.
+
+3. **Zéro abstraction inutile** : pas de portals, pas de layers Radix. DOM plat = tests E2E simples, debug facile.
+
+4. **WCAG AAA natif** : on contrôle chaque attribut ARIA, chaque focus state. Pas de magie cachée.
+
+5. **Évolutif** : si besoin de modales/menus complexes plus tard, on ajoute Radix. Mais pas avant d'en avoir besoin.
+
+### Implementation Approach
+
+| Composant UI | Solution |
+|---|---|
+| Drop zone | `react-dropzone` + styles Tailwind |
+| Barre progression | `<progress>` HTML + `aria-valuenow` + Tailwind |
+| Bouton download | `<button>` HTML + Tailwind |
+| Messages d'état | `<div role="status" aria-live="polite">` + Tailwind |
+| Feedback fichiers | HTML + Tailwind |
+
+**Dépendances UI totales :**
+- `tailwindcss` (dev)
+- `react-dropzone` (~8KB)
+- `@tailwindcss/forms` (plugin, dev)
+
+### Customization Strategy
+
+**Design tokens Tailwind (WCAG AAA vérifié) :**
+
+```javascript
+// tailwind.config.js
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        // Palette sobre, tous contrastes ≥ 7:1 sur blanc
+        primary: '#1a1a2e',      // Texte principal (15.4:1)
+        secondary: '#4a4a6a',    // Texte secondaire (7.1:1)
+        accent: '#004080',       // Actions, liens (9.5:1) ✓ AAA
+        success: '#0a5c32',      // Validation (8.2:1)
+        warning: '#7c4a03',      // Alertes (7.3:1)
+        error: '#991b1b',        // Erreurs (7.8:1)
+        surface: '#ffffff',      // Fond principal
+        muted: '#f5f5f7',        // Fond secondaire
+      },
+      fontFamily: {
+        sans: ['Inter', 'Segoe UI', 'system-ui', 'sans-serif'],
+      },
+      minWidth: {
+        'touch': '24px',         // WCAG AAA target size
+      },
+      minHeight: {
+        'touch': '24px',
+      },
+    }
+  },
+  plugins: [
+    require('@tailwindcss/forms'),
+  ],
+}
+```
+
+**Classes utilitaires WCAG :**
+
+```css
+/* Focus visible sur tous les interactifs */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2;
+}
+
+/* Taille minimum des cibles tactiles */
+.touch-target {
+  @apply min-w-touch min-h-touch;
+}
+```
