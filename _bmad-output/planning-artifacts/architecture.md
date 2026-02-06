@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5]
+stepsCompleted: [1, 2, 3, 4, 5, 6]
 inputDocuments:
   - "prd.md"
   - "product-brief-Controlmyentries-2026-02-05.md"
@@ -480,4 +480,178 @@ catch (err) {
 | Path hardcodé `/tmp/file.xlsx` | `tempfile.NamedTemporaryFile()` |
 | Catch exception silencieux | Raise HTTPException avec detail |
 | `useState` pour chaque champ | Un seul `useReducer` pour l'état global |
+
+## Project Structure & Boundaries
+
+### Complete Project Directory Structure
+
+```
+controlmyentries/
+├── .replit                      # Replit run config
+├── replit.nix                   # Nix packages
+├── pyproject.toml               # Python dependencies
+├── package.json                 # npm workspaces root
+├── Makefile                     # Commandes dev
+├── README.md
+├── .gitignore
+├── .env.example                 # Template complet
+│
+├── docs/
+│   ├── ARCHITECTURE.md          # Lien vers planning-artifacts
+│   ├── DEVELOPMENT.md           # Setup local
+│   └── API.md                   # Notes API (Swagger auto)
+│
+├── api/                         # FastAPI Backend
+│   ├── main.py                  # Uvicorn entry point
+│   ├── app.py                   # FastAPI app creation
+│   ├── routes.py                # Route definitions
+│   ├── __init__.py
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── config.py            # Pydantic Settings
+│   │   └── websocket.py         # ConnectionManager
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── validator.py         # File validation
+│   │   ├── pass1.py             # Binary detectors
+│   │   ├── pass2.py             # Z-score analysis
+│   │   └── pass3.py             # Excel generation
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── baseline.py
+│   │   ├── analysis.py
+│   │   └── errors.py
+│   └── tests/
+│       ├── conftest.py
+│       ├── test_validator.py
+│       ├── test_pass1.py
+│       ├── test_pass2.py
+│       ├── test_pass3.py
+│       └── fixtures/
+│           ├── valid_gl.xlsx
+│           └── baseline_sample.json
+│
+├── frontend/                    # React SPA
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── tsconfig.json            # Path alias @/*
+│   ├── tailwind.config.js
+│   ├── index.html
+│   ├── src/
+│   │   ├── main.tsx
+│   │   ├── App.tsx
+│   │   ├── components/
+│   │   │   ├── DropZone.tsx
+│   │   │   ├── FileCard.tsx
+│   │   │   ├── ProgressTracker.tsx
+│   │   │   ├── ResultCard.tsx
+│   │   │   └── StatusMessage.tsx
+│   │   ├── hooks/
+│   │   │   ├── useWebSocket.ts
+│   │   │   └── useFileUpload.ts
+│   │   ├── types/
+│   │   │   └── index.ts
+│   │   └── styles/
+│   │       └── globals.css
+│   └── dist/
+│
+├── e2e/                         # Playwright E2E tests
+│   ├── playwright.config.ts
+│   ├── tests/
+│   │   ├── upload-flow.spec.ts
+│   │   └── error-handling.spec.ts
+│   └── fixtures/
+│
+└── static/                      # Frontend build served by FastAPI
+```
+
+### Backend Split Pattern
+
+**main.py** :
+```python
+import uvicorn
+from api.app import app
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8080)
+```
+
+**app.py** :
+```python
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from api.routes import router
+
+app = FastAPI(title="Controlmyentries")
+app.include_router(router, prefix="/api")
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
+```
+
+### Makefile
+
+```makefile
+.PHONY: dev test build lint
+
+dev:
+	uvicorn api.app:app --reload --port 8080
+
+test:
+	pytest api/tests/ -v
+
+test-e2e:
+	playwright test
+
+build:
+	cd frontend && npm run build && cp -r dist ../static
+
+lint:
+	ruff check api/ && cd frontend && npm run lint
+```
+
+### Environment Configuration
+
+**.env.example** :
+```env
+ENVIRONMENT=development
+MAX_FILE_SIZE_MB=20
+ANALYSIS_TIMEOUT_SEC=300
+WS_HEARTBEAT_SEC=30
+```
+
+### Architectural Boundaries
+
+**API Endpoints :**
+
+| Endpoint | Méthode | Description |
+|---|---|---|
+| `/api/analyze` | POST | Upload GL + baseline → rapport |
+| `/api/generate-baseline` | POST | Upload GL N-1 → baseline JSON |
+| `/api/health` | GET | Health check |
+| `/api/test/reset` | POST | Dev only - reset state |
+| `/ws/progress/{job_id}` | WS | Real-time progress |
+
+### Data Flow
+
+```
+[User] → DropZone → POST /api/analyze
+                         │
+          ┌──────────────┼──────────────┐
+          ↓              ↓              ↓
+     validator.py → pass1.py → pass2.py → pass3.py
+          │              │              │
+          └──── WebSocket progress ─────┘
+                         │
+                         ↓
+              ResultCard ← download_url
+```
+
+### Requirements Mapping
+
+| FR Category | Backend Location | Frontend Location |
+|---|---|---|
+| Data Import (FR1-7) | `services/validator.py` | `DropZone.tsx`, `FileCard.tsx` |
+| Passe 1 (FR8-11) | `services/pass1.py` | `ProgressTracker.tsx` |
+| Passe 2 (FR12-15) | `services/pass2.py` | `ProgressTracker.tsx` |
+| Passe 3 (FR16-20) | `services/pass3.py` | `ResultCard.tsx` |
+| Real-time (FR21-23) | `core/websocket.py` | `hooks/useWebSocket.ts` |
 
