@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5]
 inputDocuments:
   - "prd.md"
   - "product-brief-Controlmyentries-2026-02-05.md"
@@ -138,3 +138,106 @@ L'émotion dominante est le **soulagement productif** — la sensation qu'une t�
 3. **L'attente est investie** : les 30 secondes sont conçues comme un moment de valeur (progression + compteur), pas comme un temps mort à minimiser visuellement.
 4. **Erreur = aide, pas reproche** : chaque message d'erreur guide vers la solution. Jamais de "fichier invalide" sans explication actionnable.
 5. **L'utilisateur reste l'expert** : l'outil détecte, l'utilisateur décide. Le rapport est un assistant, pas un juge. Vocabulaire : "détecté", "suggéré", jamais "erreur" ou "faute".
+
+## UX Pattern Analysis & Inspiration
+
+### Inspiring Products Analysis
+
+#### 1. ilovepdf.com — Le modèle direct
+
+| Aspect | Ce qu'ils font bien | Leçon pour Controlmyentries |
+|---|---|---|
+| **Onboarding** | Zéro — l'outil est auto-explicatif | Notre page doit être lisible en 5 secondes |
+| **Upload** | Drop zone centrale massive | Copier ce pattern — zone unique même pour multi-fichiers |
+| **Traitement** | Barre de progression simple | On fait MIEUX : 5 étapes détaillées + compteur live |
+| **Download** | Bouton Download visible post-traitement | Bouton explicite (pas auto-download silencieux) |
+
+**Pattern clé :** la page EST l'outil. Pas de navigation, pas de compte.
+
+**Adaptation nécessaire :** ilovepdf gère UN fichier. Nous gérons 1-2 fichiers avec détection automatique via dates.
+
+#### 2. Lighthouse / PageSpeed Insights — L'analyse technique lisible
+
+| Aspect | Ce qu'ils font bien | Leçon pour Controlmyentries |
+|---|---|---|
+| **Score global** | Un chiffre unique (0-100) avec code couleur | Notre "X anomalies détectées" |
+| **Progression** | Étapes visibles pendant l'analyse | Nos 5 étapes WebSocket (upgrade vs leur polling HTTP) |
+| **Résultats** | Hiérarchie Synthèse → catégories → détails | Structure du rapport Excel |
+
+**Pattern clé :** le résultat est auto-explicatif grâce à une hiérarchie claire.
+
+#### 3. Stripe — L'onboarding bifurqué
+
+| Aspect | Ce qu'ils font bien | Leçon pour Controlmyentries |
+|---|---|---|
+| **Setup flow** | Première visite = configuration guidée pas à pas | Premier usage = upload N-1 → génération baseline |
+| **Daily flow** | Visites suivantes = accès direct au dashboard | Usages suivants = baseline + GL → rapport |
+| **Détection d'état** | Le système sait si le setup est fait | Détection automatique : 1 fichier = premier usage possible, 2 fichiers = usage récurrent |
+
+**Pattern clé :** ne pas traiter le premier usage comme les suivants.
+
+#### 4. Notion — La structure hiérarchique
+
+| Aspect | Ce qu'ils font bien | Leçon pour Controlmyentries |
+|---|---|---|
+| **Blocs hiérarchiques** | Header → sous-sections → détails repliables | Structure des onglets Excel (Synthèse → Catégorie → Détail) |
+
+### Transferable UX Patterns
+
+#### Patterns d'interaction
+
+1. **Drop zone unique intelligente** : une seule zone accepte 1-2 fichiers. Le système détecte automatiquement baseline vs GL via les colonnes de date. Pas de labellisation manuelle.
+2. **Détection auto du contexte** : si < 6 mois d'historique détecté dans un fichier unique → conseil inline "Nous recommandons de charger également votre GL de l'année précédente pour une détection plus fiable". L'utilisateur dépose le second fichier, le système reconnaît automatiquement via les dates.
+3. **Feedback explicite post-détection** : après upload de 2 fichiers, afficher clairement "Fichier 1 : GL 2024 (référence) ✓ | Fichier 2 : GL janvier 2025 (à analyser) ✓". Si ambiguïté → message clair avec boutons radio pour préciser.
+4. **Progression WebSocket 5 étapes** (adaptation Lighthouse) : upgrade technique vs polling. Compteur d'anomalies live.
+5. **Bouton download explicite** (correction ilovepdf) : pas d'auto-download silencieux (risque popup-blocker + WCAG). Fichier prêt → bouton "Télécharger le rapport" immédiatement visible.
+6. **Alternative clavier équivalente** (WCAG AAA) : bouton "Choisir fichier(s)" aussi visible que la drop zone.
+7. **Nom de fichier explicite** : le rapport téléchargé s'appelle `Controlmyentries_Rapport_2025-01_[Entité].xlsx`, pas `report.xlsx`. Facilite l'archivage professionnel.
+
+#### Patterns visuels
+
+1. **Hiérarchie Synthèse → Détail** : compteur principal visible immédiatement, détails en drill-down (rapport Excel).
+2. **Code couleur sémantique + formes** : vert/orange/rouge + icônes pour WCAG (daltonisme).
+3. **Ton professionnel sobre** : palette réduite, pas de décorations.
+
+#### Patterns de micro-copie
+
+1. **Vocabulaire utilisateur, pas technique** : jamais "baseline" dans l'UI → "GL de l'année précédente" ou "historique de référence".
+2. **Micro-copie progressive** :
+   - Premier usage : "Déposez votre Grand Livre de l'année précédente (2024)"
+   - Usages suivants : "Déposez votre GL mensuel"
+   - Pendant traitement : "Analyse en cours... 3 anomalies détectées"
+   - Résultat : "Rapport prêt — 12 anomalies à examiner"
+
+### Anti-Patterns to Avoid
+
+1. **Deux zones de drop séparées** : confusion "lequel où ?". → Zone unique + détection auto via dates.
+2. **Traiter premier usage = usages suivants** : si Sophie arrive sans historique et voit "déposez 2 fichiers", elle est perdue. → Détection du contexte + guidage adapté.
+3. **Auto-download silencieux** : bloqué par navigateurs modernes. → Bouton explicite.
+4. **Drop-zone sans alternative clavier** : échec WCAG AAA. → Bouton équivalent visible.
+5. **localStorage seul pour baseline** : risque de perte (cache vidé, autre navigateur). → localStorage + download explicite du fichier de référence à chaque génération.
+6. **Résultats in-browser** : le livrable EST le fichier Excel. Pas de tableau web. (Note : un preview web léger type WeTransfer a été discuté et explicitement écarté pour le MVP — KISS.)
+7. **Configuration pré-analyse** : le Z-score s'adapte seul. Zéro paramètre.
+8. **Jargon technique dans l'UI** : "baseline", "Z-score" → vocabulaire métier comptable uniquement.
+
+### Design Inspiration Strategy
+
+**Adopter :**
+- Drop zone centrale dominante (ilovepdf)
+- Bouton download explicite post-traitement
+- Hiérarchie Synthèse → Détail (Lighthouse/Notion)
+- Nom de fichier explicite pour archivage pro
+
+**Adapter :**
+- Zone unique multi-fichiers avec détection auto via dates (notre innovation)
+- Onboarding bifurqué setup/daily (Stripe) → premier usage vs récurrent
+- WebSocket progression (upgrade vs Lighthouse polling)
+- localStorage + fallback download explicite pour fichier de référence
+- Feedback explicite post-détection ("Fichier 1 = référence ✓")
+- Micro-copie progressive sans jargon technique
+
+**Éviter :**
+- Dual-drop zones labellisées → zone unique intelligente
+- Auto-download silencieux → bouton explicite
+- Premier = suivant → détection contexte + guidage adapté
+- Preview web des résultats → MVP KISS, le fichier Excel EST le livrable
