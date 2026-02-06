@@ -1,0 +1,11 @@
+run = "uvicorn api.main:app --host 0.0.0.0 --port 8080"
+entrypoint = "api/main.py"
+
+[nix]
+channel = "stable-23_11"
+
+[deployment]
+run = ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port 8080"]
+
+[env]
+PYTHONPATH = "${REPL_HOME}"

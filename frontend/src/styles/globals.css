@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* WCAG 2.2 AAA - Focus ring visible */
+:focus-visible {
+  outline: 2px solid #0284c7;
+  outline-offset: 2px;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: color, background-color, border-color, outline-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* Skip to main content link for accessibility */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #0284c7;
+  color: white;
+  padding: 8px 16px;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  top: 0;
+}

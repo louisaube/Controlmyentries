@@ -1,0 +1,110 @@
+# generated: 2026-02-06
+# project: Controlmyentries
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created, ready for development
+#   - in-progress: Developer actively working on implementation
+#   - review: Implementation complete, ready for review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Mark epic as 'in-progress' when starting work on its first story
+# - SM typically creates next story ONLY after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then Dev runs code-review (fresh context, ideally different LLM)
+
+generated: 2026-02-06
+project: Controlmyentries
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Project Skeleton
+  epic-1: done
+  1-1-initialize-replit-project-structure: done
+  1-2-health-check-endpoint: done
+  1-3-frontend-skeleton-with-static-serving: done
+  epic-1-retrospective: optional
+
+  # Epic 2: File Upload & Validation
+  epic-2: done
+  2-1-dropzone-component: done
+  2-2-file-validation-service: done
+  2-3-upload-api-endpoint: done
+  epic-2-retrospective: optional
+
+  # Epic 3: Baseline Management
+  epic-3: done
+  3-1-generate-baseline-endpoint: done
+  3-2-baseline-download: done
+  3-3-baseline-upload-for-analysis: done
+  epic-3-retrospective: optional
+
+  # Epic 4: Anomaly Detection Engine
+  epic-4: done
+  4-1-pass-1-disappearance-detector: done
+  4-2-pass-1-appearance-detector: done
+  4-3-pass-1-variation-detector: done
+  4-4-pass-1-recurrence-detector: done
+  4-5-pass-2-z-score-calculator: done
+  4-6-pass-2-degraded-mode: done
+  epic-4-retrospective: optional
+
+  # Epic 5: Report Generation
+  epic-5: done
+  5-1-excel-multi-tab-report: done
+  5-2-level-1-factual-statement: done
+  5-3-level-2-statistical-data: done
+  5-4-synthesis-tab: done
+  5-5-report-download: done
+  epic-5-retrospective: optional
+
+  # Epic 6: Full Analysis Flow
+  epic-6: done
+  6-1-integrated-analysis-pipeline: done
+  epic-6-retrospective: optional
+
+  # Epic 7: Real-Time Feedback
+  epic-7: done
+  7-1-websocket-progress-connection: done
+  7-2-progresstracker-component: done
+  7-3-live-anomaly-counter: done
+  7-4-processing-time-display: done
+  epic-7-retrospective: optional
+
+  # Epic 8: Trust & Transparency
+  epic-8: done
+  8-1-confidence-index: done
+  8-2-permanent-disclaimer: done
+  8-3-statistical-transparency: done
+  epic-8-retrospective: optional
+
+  # Epic 9: Landing Page
+  epic-9: done
+  9-1-seo-optimized-landing-page: done
+  9-2-landing-page-content: done
+  9-3-call-to-action: done
+  epic-9-retrospective: optional
+
+  # Epic 10: Accessibility Polish
+  epic-10: done
+  10-1-keyboard-navigation: done
+  10-2-screen-reader-announcements: done
+  10-3-error-accessibility: done
+  epic-10-retrospective: optional
