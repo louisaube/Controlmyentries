@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 inputDocuments:
   - "prd.md"
   - "product-brief-Controlmyentries-2026-02-05.md"
@@ -870,3 +870,253 @@ flowchart TD
 6. **Confiance par transparence** : chaque anomalie montre ses données source. Mini-glossaire pour le DAF.
 
 7. **Résilience session** : fermeture onglet ne perd pas le travail. Job continue, résultat récupérable 15 min.
+
+## Component Strategy
+
+### Design System Components
+
+**Disponible :** Rien. Stack sans framework UI (KISS).
+
+Le choix Tailwind CSS + react-dropzone + HTML sémantique signifie que nous n'avons pas de bibliothèque de composants pré-faits. Tout est construit sur mesure avec :
+- Tailwind pour le styling
+- HTML natif pour la sémantique
+- ARIA manuel pour l'accessibilité
+- react-dropzone pour le composant central
+
+### Custom Components
+
+**5 composants nécessaires pour le MVP :**
+
+#### 1. DropZone
+
+**Purpose :** Zone de dépôt de fichiers, cœur de l'interaction
+
+**Content :**
+- Icône upload (24×24px min)
+- Texte principal : "Déposez votre Grand Livre ici"
+- Texte secondaire : "ou cliquez pour parcourir • .xlsx, .xls, .csv"
+- Bouton alternatif clavier visible
+
+**Actions :**
+- Drag-and-drop fichier(s)
+- Clic pour ouvrir le sélecteur de fichiers
+- Focus clavier + Enter
+
+**States :**
+
+| État | Classes Tailwind | Description |
+|---|---|---|
+| Idle | `border-dashed border-2 border-secondary bg-surface` | Invitation à déposer |
+| Hover | `border-dashed border-2 border-secondary bg-muted` | Survol souris |
+| Drag-over | `border-solid border-2 border-accent bg-accent/10` | Fichier au-dessus |
+| Uploading | `border-solid border-2 border-accent animate-pulse` | En cours d'upload |
+| Error | `border-solid border-2 border-error bg-error/5` | Fichier rejeté |
+
+**Accessibility :**
+- `role="button"` sur la zone cliquable
+- `aria-label="Zone de dépôt de fichiers. Glissez-déposez ou appuyez sur Entrée pour parcourir"`
+- `tabindex="0"` pour focus clavier
+- Focus ring visible : `focus:ring-2 focus:ring-accent focus:ring-offset-2`
+- Bouton "Choisir fichier(s)" alternatif visible (pas hidden)
+
+**Implementation :** `react-dropzone` + Tailwind
+
+```jsx
+import { useDropzone } from 'react-dropzone';
+
+function DropZone({ onFilesAccepted, state }) {
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'text/csv': ['.csv']
+    },
+    maxFiles: 2,
+    onDrop: onFilesAccepted
+  });
+
+  return (
+    <div
+      {...getRootProps()}
+      className={`border-2 rounded-lg p-12 text-center cursor-pointer transition-colors
+        ${isDragActive ? 'border-solid border-accent bg-accent/10' : 'border-dashed border-secondary bg-surface hover:bg-muted'}
+        focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2`}
+    >
+      <input {...getInputProps()} />
+      {/* Contenu */}
+    </div>
+  );
+}
+```
+
+---
+
+#### 2. FileCard
+
+**Purpose :** Affiche un fichier uploadé avec son statut
+
+**Content :**
+- Icône type de fichier
+- Nom du fichier (tronqué si > 30 caractères)
+- Taille du fichier
+- Rôle détecté : "Référence 2024" ou "À analyser (jan. 2025)"
+- Statut : checkmark vert ou spinner
+
+**Actions :**
+- Bouton supprimer (×) accessible au clavier
+
+**States :**
+
+| État | Indicateur visuel |
+|---|---|
+| Validating | Spinner + texte "Validation..." |
+| Valid | Checkmark vert + rôle affiché |
+| Invalid | Icône erreur + message inline |
+
+**Accessibility :**
+- `aria-live="polite"` pour changements de statut
+- Bouton supprimer : `aria-label="Supprimer le fichier [nom]"`
+
+---
+
+#### 3. ProgressTracker
+
+**Purpose :** Affiche la progression en 5 étapes + compteur d'anomalies live
+
+**Content :**
+- 5 étapes numérotées avec labels
+- Barre de progression
+- Compteur d'anomalies détectées (mise à jour WebSocket)
+
+**States :**
+
+| État étape | Style |
+|---|---|
+| Pending | Cercle vide, texte `secondary` |
+| Active | Cercle rempli `accent`, texte `primary`, pulse |
+| Complete | Checkmark vert, texte `success` |
+
+**Accessibility :**
+- `<progress>` HTML natif avec `aria-valuenow`, `aria-valuemin`, `aria-valuemax`
+- `aria-live="polite"` sur le compteur d'anomalies
+- Labels explicites pour chaque étape
+
+**Animation compteur :**
+```css
+@keyframes bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.counter-update {
+  animation: bounce 200ms ease-out;
+}
+```
+
+**Respect prefers-reduced-motion :**
+```css
+@media (prefers-reduced-motion: reduce) {
+  .counter-update { animation: none; }
+}
+```
+
+---
+
+#### 4. ResultCard
+
+**Purpose :** Affiche le résultat final avec actions
+
+**Content :**
+- Icône succès (checkmark dans cercle)
+- Titre : "Analyse terminée"
+- Compteur final : "12 anomalies détectées"
+- Bouton principal : "Télécharger le rapport"
+- Boutons secondaires : "Relancer l'analyse" | "Nouvelle analyse"
+
+**States :**
+
+| État | Affichage |
+|---|---|
+| Complete | Bouton download prominent |
+| Downloaded | "Rapport téléchargé ✓" + boutons secondaires visibles |
+
+**Accessibility :**
+- Bouton principal : `role="button"`, focus automatique à l'apparition
+- `aria-describedby` lié au compteur d'anomalies
+- Annonce vocale : `aria-live="assertive"` pour "Rapport prêt"
+
+---
+
+#### 5. StatusMessage
+
+**Purpose :** Affiche erreurs, avertissements et informations
+
+**Variants :**
+
+| Variant | Couleur | Icône | Usage |
+|---|---|---|---|
+| Error | `error` + `bg-error/5` | ⚠️ | Fichier invalide, erreur serveur |
+| Warning | `warning` + `bg-warning/5` | ⚡ | Historique < 6 mois |
+| Info | `accent` + `bg-accent/5` | ℹ️ | Conseils, aide |
+| Success | `success` + `bg-success/5` | ✓ | Confirmation action |
+
+**Content :**
+- Icône (jamais couleur seule — WCAG)
+- Message principal
+- Message secondaire (optionnel)
+- Action (bouton optionnel)
+
+**Accessibility :**
+- `role="alert"` pour erreurs (lecture immédiate)
+- `role="status"` pour info/success (lecture polie)
+- Contraste ≥ 7:1 sur tous les textes
+
+---
+
+### Component Implementation Strategy
+
+**Approche :**
+
+1. **HTML sémantique first** : utiliser les éléments natifs (`<button>`, `<progress>`, `<input type="file">`) avant toute abstraction.
+
+2. **Tailwind pour le styling** : pas de CSS custom sauf les animations. Utiliser les design tokens définis dans `tailwind.config.js`.
+
+3. **ARIA explicite** : documenter chaque attribut ARIA dans le composant. Pas de "magie" — tout est visible dans le code.
+
+4. **États via props** : chaque composant reçoit son état en prop, pas de state interne complexe. Facilite les tests.
+
+5. **Composition simple** : composants plats, pas de nesting profond. La page assemble les 5 composants directement.
+
+**Structure fichiers :**
+```
+src/components/
+├── DropZone.tsx
+├── FileCard.tsx
+├── ProgressTracker.tsx
+├── ResultCard.tsx
+├── StatusMessage.tsx
+└── index.ts
+```
+
+### Implementation Roadmap
+
+**Phase 1 — Core Components (MVP day 1)**
+
+| Composant | Priorité | Justification |
+|---|---|---|
+| DropZone | P0 | Point d'entrée unique, sans lui rien ne fonctionne |
+| StatusMessage | P0 | Feedback erreurs/validation, critique pour la confiance |
+
+**Phase 2 — Processing Components (MVP day 2)**
+
+| Composant | Priorité | Justification |
+|---|---|---|
+| FileCard | P0 | Feedback immédiat post-upload |
+| ProgressTracker | P0 | Engagement pendant les 30 secondes |
+
+**Phase 3 — Completion Components (MVP day 3)**
+
+| Composant | Priorité | Justification |
+|---|---|---|
+| ResultCard | P0 | Délivre la valeur (bouton download) |
+
+**Tous les composants sont P0** — le flow est linéaire et chaque composant est nécessaire pour une étape du parcours. Pas de composant "nice to have" dans ce MVP KISS.
