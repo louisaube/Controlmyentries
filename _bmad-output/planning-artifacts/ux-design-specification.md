@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7]
 inputDocuments:
   - "prd.md"
   - "product-brief-Controlmyentries-2026-02-05.md"
@@ -327,3 +327,153 @@ module.exports = {
   @apply min-w-touch min-h-touch;
 }
 ```
+
+## Defining Core Experience (Detailed)
+
+### User Mental Model
+
+**Comment Sophie résout ce problème aujourd'hui :**
+- Export du GL depuis le logiciel comptable
+- Création d'un TCD dans Excel
+- Comparaison visuelle M vs M-1 colonne par colonne
+- 4 heures de travail, yeux fatigués, oublis fréquents
+
+**Modèle mental qu'elle apporte :**
+- "Je cherche ce qui a bougé de façon anormale"
+- "Le contrôle c'est du travail manuel et fastidieux"
+- "Les outils automatiques sont souvent trop génériques"
+
+**Ce qu'elle déteste dans l'approche actuelle :**
+- Temps perdu sur des vérifications répétitives
+- Risque d'oublier une anomalie par fatigue
+- Aucune preuve de "couverture complète"
+
+**Ce qu'elle aimerait :**
+- Un outil qui fait le travail ingrat à sa place
+- Qui lui montre ses calculs (pas une boîte noire)
+- Qui lui laisse le dernier mot (elle reste l'experte)
+
+### Success Criteria
+
+| Critère | Cible | Mesure |
+|---|---|---|
+| **Temps upload → rapport** | < 45 secondes | Timer serveur |
+| **Compréhension immédiate** | Page lisible en < 5 secondes | Test utilisateur |
+| **Zéro configuration** | 0 paramètre avant analyse | Comptage UI |
+| **Confiance dans les résultats** | Sophie peut vérifier chaque détection | Données source visibles |
+| **Rétention mensuelle** | Sophie revient chaque clôture | Analytics |
+| **Pertinence des détections** | ≥ 80% d'anomalies actionnables | Feedback utilisateur (pouce haut/bas optionnel) |
+
+**L'utilisateur dit "ça marche" quand :**
+1. Le fichier est accepté sans erreur (validation claire)
+2. La progression montre que quelque chose se passe (pas de spinner vide)
+3. Le compteur d'anomalies monte → excitation
+4. Le rapport Excel s'ouvre et l'onglet Synthèse est immédiatement lisible
+5. Une anomalie détectée correspond à un vrai oubli → "aha moment"
+
+### Novel UX Patterns
+
+**Pattern établi utilisé :**
+- Drop zone centrale (ilovepdf) → familier, pas besoin d'apprentissage
+- Barre de progression multi-étapes (Lighthouse) → familier
+
+**Pattern adapté (notre innovation) :**
+- **Smart dual-upload** : une zone unique accepte 1-2 fichiers, détection automatique via dates. Nouveau pour ce contexte, mais interaction familière (drag-and-drop).
+- **Compteur live pendant traitement** : au lieu d'un simple "Processing...", le compteur d'anomalies monte en temps réel. Micro-animation bounce (scale 1.05 → 1.0, 200ms) quand le nombre change. Transforme l'attente en anticipation.
+
+**Pas de pattern vraiment novel :**
+Tout est basé sur des patterns connus. L'innovation est dans la combinaison et l'adaptation au contexte comptable. Aucune éducation utilisateur nécessaire.
+
+**Métaphore utilisée :**
+"Photocopieur intelligent" — tu poses ton document, tu appuies sur le bouton, tu récupères le résultat enrichi. Familier, zéro apprentissage.
+
+### Experience Mechanics
+
+#### 1. Initiation — Drop Zone États Visuels
+
+| État | Style Tailwind | Description |
+|---|---|---|
+| **Idle** | `border-dashed border-2 border-secondary bg-surface` | Zone neutre, invitation à déposer |
+| **Hover** | `border-dashed border-2 border-secondary bg-muted` | Survol souris, feedback subtil |
+| **Drag-over** | `border-solid border-2 border-accent bg-accent/10` | Fichier au-dessus, prêt à recevoir |
+| **Error** | `border-solid border-2 border-error bg-error/5` | Fichier rejeté |
+
+**Contenu de la zone idle :**
+- Icône upload centrée (24×24px minimum)
+- Texte principal : "Déposez votre Grand Livre ici"
+- Texte secondaire : "ou cliquez pour parcourir • .xlsx, .xls, .csv"
+
+#### 2. Interaction
+
+| Élément | Détail |
+|---|---|
+| Action utilisateur | Drag-and-drop fichier(s) OU clic bouton |
+| Formats acceptés | .xlsx, .xls, .csv (affichés sous la zone) |
+| Multi-fichiers | 1-2 fichiers acceptés simultanément |
+| Détection auto | Système identifie référence vs GL à analyser via dates |
+| Feedback immédiat | "Fichier reçu : GL_2024.xlsx ✓" |
+
+#### 3. Feedback WebSocket (pendant traitement)
+
+**Structure du message :**
+```json
+{
+  "step": 3,
+  "stepName": "Analyse Z-score",
+  "progress": 0.6,
+  "anomaliesFound": 7,
+  "status": "processing"
+}
+```
+
+| Étape | Message affiché | Durée estimée |
+|---|---|---|
+| 1 | "Validation du fichier..." | 2s |
+| 2 | "Passe 1 : Tests binaires..." | 5s |
+| 3 | "Passe 2 : Analyse Z-score..." | 15s |
+| 4 | "Passe 3 : Classification..." | 5s |
+| 5 | "Génération du rapport..." | 3s |
+
+**Compteur live :** "X anomalies détectées" mis à jour après chaque passe. Animation bounce subtile à chaque changement.
+
+**Gestion reconnexion WebSocket :**
+1. Si déconnexion → "Reconnexion en cours..." (pas d'erreur brutale)
+2. 3 tentatives avec backoff exponentiel
+3. Si échec → fallback polling HTTP toutes les 2s
+
+#### 4. Completion
+
+**Message final WebSocket :**
+```json
+{
+  "step": 5,
+  "stepName": "Terminé",
+  "progress": 1.0,
+  "anomaliesFound": 12,
+  "status": "complete",
+  "downloadUrl": "/api/report/abc123"
+}
+```
+
+| Élément | Détail |
+|---|---|
+| Signal de fin | "Rapport prêt — 12 anomalies à examiner" |
+| Action principale | Bouton "Télécharger le rapport" (accent color, prominent) |
+| Action secondaire | "Relancer l'analyse" (garde les fichiers en mémoire) |
+| Téléchargement | `Controlmyentries_Rapport_2025-01.xlsx` |
+| État post-download | "Nouvelle analyse" visible, fichier de référence conservé |
+| Persistance | localStorage conserve le fichier de référence |
+
+#### 5. Gestion d'erreur complète
+
+| Erreur | Message | Action |
+|---|---|---|
+| Format non supporté | "Format non reconnu. Formats acceptés : .xlsx, .xls, .csv" | Réessayer |
+| Colonnes manquantes | "Colonnes détectées : [liste]. Colonnes attendues : [liste]" | Lien doc |
+| Fichier trop gros | "Fichier limité à 50 Mo. Votre fichier : X Mo" | Suggestion découpage |
+| Fichier vide | "Le fichier est vide. Vérifiez que vous avez sélectionné le bon fichier." | Réessayer |
+| Fichier corrompu | "Impossible de lire le fichier. Il semble corrompu ou protégé." | Réessayer |
+| Timeout (>60s) | "L'analyse prend plus de temps que prévu. Patientez ou réessayez." | Attendre / Réessayer |
+| 2 fichiers identiques | "Les deux fichiers semblent identiques. Vérifiez votre sélection." | Réessayer |
+| Dates incohérentes | "Les dates du fichier 2 sont antérieures au fichier 1. Vérifiez l'ordre." | Réessayer |
+| Erreur serveur | "Une erreur est survenue. Réessayez dans quelques instants." | Réessayer + Contact |
