@@ -1,8 +1,9 @@
 run = "uvicorn api.main:app --host 0.0.0.0 --port 8080"
 entrypoint = "api/main.py"
+modules = ["python-3.11", "nodejs-20", "bash"]
 
 [nix]
-channel = "stable-23_11"
+channel = "stable-25_05"
 
 [deployment]
 run = ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port 8080"]
