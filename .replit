@@ -17,9 +17,7 @@ expertMode = true
 
 [[ports]]
 localPort = 5000
-
-[[ports]]
-localPort = 8080
+externalPort = 80
 
 [workflows]
 runButton = "Project"
@@ -42,5 +40,5 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python -m api.main"
+args = "bash start.sh"
 waitForPort = 5000
