@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 inputDocuments:
   - "prd.md"
   - "product-brief-Controlmyentries-2026-02-05.md"
@@ -1273,3 +1273,107 @@ Format standard pour documenter chaque pattern :
 | **Retry conserve fichiers** | Fichiers restent après erreur | Moins de friction |
 | **Couleur ≠ seul signal** | Toujours couleur + icône | WCAG daltonisme |
 | **True Disabled** | `disabled` attribute obligatoire | Vrai blocage navigateur |
+
+## Responsive Design & Accessibility
+
+### Responsive Strategy
+
+**Desktop-First Approach (1024px+) :**
+- Layout optimal : drop zone 60% viewport height
+- Single column centered, max-width 800px
+- Espace généreux pour feedback visuel
+
+**Tablet (768-1023px) :**
+- Drop zone 50% viewport height
+- Mêmes composants, espacement réduit
+- Touch targets déjà 24×24px (WCAG AAA)
+
+**Mobile (<768px) — Non ciblé MVP :**
+- Fonctionnel mais non optimisé
+- Stack vertical naturel (déjà single-column)
+- Drop zone = bouton "Choisir fichier" dominant
+
+### Breakpoint Strategy
+
+| Breakpoint | Classe Tailwind | Comportement |
+|---|---|---|
+| Mobile | (default) | Stack vertical, padding réduit |
+| Tablet | `md:` | Drop zone 50vh, espacement moyen |
+| Desktop | `lg:` | Drop zone 60vh, espacement généreux |
+
+**Approche Mobile-First CSS :**
+```css
+/* Base (mobile) */
+.drop-zone { height: 40vh; padding: 1rem; }
+
+/* Tablet */
+@media (min-width: 768px) {
+  .drop-zone { height: 50vh; padding: 2rem; }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .drop-zone { height: 60vh; padding: 3rem; }
+}
+```
+
+### Accessibility Strategy
+
+**Niveau : WCAG 2.2 AAA**
+
+| Critère | Cible | Implémentation |
+|---|---|---|
+| Contraste texte | ≥ 7:1 | Palette vérifiée (étape 8) |
+| Contraste UI | ≥ 3:1 | Bordures, icônes validés |
+| Target size | ≥ 24×24px | `min-w-touch min-h-touch` |
+| Focus visible | Toujours | `focus:ring-2 focus:ring-accent` |
+| Motion | Respecté | `prefers-reduced-motion` |
+| Keyboard nav | Complète | Tab order, Enter, Escape |
+
+**Screen Reader Support :**
+- `aria-live="polite"` sur compteur et statuts
+- `aria-live="assertive"` sur "Rapport prêt"
+- `role="alert"` sur erreurs
+- Labels explicites sur tous les interactifs
+
+**Pas de CAPTCHA, pas de timeout utilisateur, pas de contenu clignotant.**
+
+### Testing Strategy
+
+**Tests automatisés :**
+- axe-core dans les tests E2E (Playwright)
+- Lighthouse accessibility audit en CI
+- eslint-plugin-jsx-a11y dans le linting
+
+**Tests manuels :**
+- Navigation clavier complète (Tab, Enter, Escape)
+- VoiceOver (macOS) pour screen reader
+- Simulation daltonisme (Chrome DevTools)
+
+**Checklist pré-release :**
+- [ ] Tous les boutons focusables
+- [ ] Messages d'erreur annoncés par screen reader
+- [ ] Contraste ≥ 7:1 validé sur chaque couleur
+- [ ] Drop zone accessible au clavier uniquement
+
+### Implementation Guidelines
+
+**HTML sémantique obligatoire :**
+```html
+<main> <!-- Contenu principal -->
+<button> <!-- Actions, pas <div onclick> -->
+<progress> <!-- Barre de progression -->
+<input type="file"> <!-- Upload, pas custom -->
+```
+
+**ARIA explicite :**
+```jsx
+<div
+  role="button"
+  tabIndex={0}
+  aria-label="Zone de dépôt de fichiers"
+  onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+>
+```
+
+**Skip link non requis** : single-page sans navigation.
