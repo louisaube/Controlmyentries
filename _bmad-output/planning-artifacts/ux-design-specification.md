@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9]
 inputDocuments:
   - "prd.md"
   - "product-brief-Controlmyentries-2026-02-05.md"
@@ -581,3 +581,120 @@ Tous les espacements sont des multiples de 4px pour une grille cohérente.
 - Skip links non nécessaires (single page, pas de navigation)
 
 **Taille de police minimum :** 12px (labels secondaires). Texte principal jamais sous 16px.
+
+## Design Direction Decision
+
+### Design Directions Explored
+
+Étant donné l'extrême simplicité de l'UI Controlmyentries (single-page tool avec 4 composants), une exploration multi-directions n'est pas pertinente. La contrainte "modèle ilovepdf" + WCAG AAA + single column centered définit naturellement une direction unique.
+
+**Directions NON explorées (et pourquoi) :**
+- Dashboard multi-panneaux → hors scope (pas de dashboard)
+- Navigation latérale → hors scope (pas de navigation)
+- Layout en grille → over-engineering pour 4 composants
+- Split-screen → inutile pour un flow linéaire unique
+
+### Chosen Direction
+
+**Direction : "Vertical Flow Centered"**
+
+Layout minimaliste en colonne unique centrée, 100% du flow visible sans scroll au-dessus du fold (desktop).
+
+**Structure verticale — État Idle :**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Logo + Tagline (compact, top-left)                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│                                                             │
+│            ┌───────────────────────────────┐                │
+│            │                               │                │
+│            │      DROP ZONE                │                │
+│            │   (60% viewport height)       │                │
+│            │                               │                │
+│            │   "Déposez votre GL ici"      │                │
+│            │                               │                │
+│            └───────────────────────────────┘                │
+│                                                             │
+│            [ Messages d'état / Erreurs ]                    │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  Footer minimal (mention légale, version)                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**État Processing :**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Logo + Tagline                                             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│            ┌───────────────────────────────┐                │
+│            │  Fichiers reçus :             │                │
+│            │  ✓ GL_2024.xlsx (référence)   │                │
+│            │  ✓ GL_2025-01.xlsx (analyse)  │                │
+│            └───────────────────────────────┘                │
+│                                                             │
+│            ════════════════════════════                     │
+│            Passe 2 : Analyse Z-score...                     │
+│                                                             │
+│                    7 anomalies                              │
+│                     détectées                               │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  Footer                                                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**État Complete :**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Logo + Tagline                                             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│            ┌───────────────────────────────┐                │
+│            │        ✓ Analyse terminée     │                │
+│            │                               │                │
+│            │     12 anomalies détectées    │                │
+│            │                               │                │
+│            │  ┌─────────────────────────┐  │                │
+│            │  │  Télécharger le rapport │  │                │
+│            │  └─────────────────────────┘  │                │
+│            │                               │                │
+│            │  [ Relancer ] [ Nouvelle ]    │                │
+│            └───────────────────────────────┘                │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  Footer                                                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Design Rationale
+
+1. **"The page IS the tool"** : aucune distraction. L'utilisateur voit immédiatement ce qu'il doit faire.
+
+2. **Centered = attention focused** : drop zone au centre de l'attention, impossible à rater.
+
+3. **Vertical stacking = flow naturel** : le regard descend naturellement de la zone d'action vers le résultat.
+
+4. **Above the fold** : tout le flow visible sans scroll sur desktop 1024px+.
+
+5. **State machine visible** : la page se transforme (idle → processing → complete) sans changer de route.
+
+### Implementation Approach
+
+**Container principal :**
+```html
+<main class="min-h-screen flex flex-col items-center justify-center px-4">
+  <div class="w-full max-w-2xl">
+    <!-- Logo -->
+    <!-- Drop zone OR Progress OR Result -->
+    <!-- Footer -->
+  </div>
+</main>
+```
+
+**Pas de HTML showcase séparé** : la simplicité du design ne justifie pas un fichier de 500 lignes. Les wireframes ASCII ci-dessus suffisent pour le MVP.
