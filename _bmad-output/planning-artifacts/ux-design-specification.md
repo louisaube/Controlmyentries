@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 inputDocuments:
   - "prd.md"
   - "product-brief-Controlmyentries-2026-02-05.md"
@@ -1120,3 +1120,156 @@ src/components/
 | ResultCard | P0 | Délivre la valeur (bouton download) |
 
 **Tous les composants sont P0** — le flow est linéaire et chaque composant est nécessaire pour une étape du parcours. Pas de composant "nice to have" dans ce MVP KISS.
+
+## UX Consistency Patterns
+
+### Button Hierarchy
+
+**3 niveaux de boutons :**
+
+| Niveau | Usage | Style Tailwind | Exemple |
+|---|---|---|---|
+| **Primary** | Action principale unique par écran | `bg-accent text-white font-medium px-6 py-3 rounded-lg hover:bg-accent/90` | "Télécharger le rapport" |
+| **Secondary** | Actions alternatives | `bg-transparent border border-secondary text-primary px-4 py-2 rounded-lg hover:bg-muted` | "Relancer l'analyse" |
+| **Tertiary** | Actions mineures | `text-accent underline hover:text-accent/80` | "Nouvelle analyse" |
+
+**Règles de hiérarchie :**
+- Maximum 1 bouton Primary par état d'écran
+- Secondary toujours à droite du Primary (lecture LTR)
+- Tertiary en dessous ou séparé visuellement
+
+**États de bouton :**
+
+| État | Style | Description |
+|---|---|---|
+| Default | Couleurs normales | Repos |
+| Hover | `hover:bg-accent/90` ou `hover:bg-muted` | Survol souris |
+| Focus | `focus:ring-2 focus:ring-accent focus:ring-offset-2` | Focus clavier |
+| Active | `active:scale-[0.98]` | Clic en cours |
+| Disabled | `opacity-50 cursor-not-allowed` + `disabled` attribute | Non cliquable |
+| Submitting | Spinner + `pointer-events-none` + `disabled` | Action en cours |
+
+**Double-Submit Prevention :**
+```jsx
+<button
+  disabled={isSubmitting}
+  aria-disabled={isSubmitting}
+  className={isSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+>
+  {isSubmitting ? <Spinner /> : 'Télécharger'}
+</button>
+```
+
+### Feedback Patterns
+
+**4 types de messages (via StatusMessage component) :**
+
+| Type | Couleur | Icône | Annonce | Usage |
+|---|---|---|---|---|
+| **Error** | `error` (#991b1b) | ⚠️ Triangle | `role="alert"` (immédiat) | Fichier rejeté, erreur serveur |
+| **Warning** | `warning` (#7c4a03) | ⚡ Éclair | `role="status"` (poli) | Historique < 6 mois |
+| **Info** | `accent` (#004080) | ℹ️ Info | `role="status"` | Conseils, aide contextuelle |
+| **Success** | `success` (#0a5c32) | ✓ Check | `role="status"` | Fichier accepté, analyse terminée |
+
+**Structure des messages d'erreur :**
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ ⚠️  [Titre court et actionnable]                        │
+│     [Détail : ce qui a été détecté vs ce qui est attendu]│
+│     [Lien ou bouton : action corrective]                │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Error Message Overflow :**
+- Si liste de colonnes > 3 lignes : truncate + accordion "Voir détails"
+- Tooltip sur colonnes tronquées
+
+**Timing des feedbacks :**
+- Validation fichier : < 200ms après drop
+- Erreur affichée : immédiatement, reste visible jusqu'à action
+- Success : 3 secondes puis fade (ou reste si action à faire)
+
+### Loading & Progress States
+
+**Skeleton Loading :**
+
+Si opération > 100ms, afficher skeleton :
+```jsx
+{isValidating ? (
+  <div className="animate-pulse bg-muted rounded h-16 w-full" />
+) : (
+  <FileCard {...file} />
+)}
+```
+
+Règle : < 100ms = rien (évite flicker), > 100ms = skeleton
+
+**Progression en 5 étapes :**
+
+| Étape | Message | Durée estimée | Feedback visuel |
+|---|---|---|---|
+| 1 | "Validation du fichier..." | ~2s | Cercle 1 actif |
+| 2 | "Passe 1 : Tests binaires..." | ~5s | Cercle 2 actif |
+| 3 | "Passe 2 : Analyse Z-score..." | ~15s | Cercle 3 actif + compteur actif |
+| 4 | "Passe 3 : Classification..." | ~5s | Cercle 4 actif |
+| 5 | "Génération du rapport..." | ~3s | Cercle 5 actif |
+
+**Debounce Counter :**
+```typescript
+const [count, setCount] = useState(0);
+const debouncedCount = useDebounce(count, 150); // 150ms
+
+useEffect(() => {
+  triggerBounceAnimation();
+}, [debouncedCount]);
+```
+
+**Focus Trap Loading :**
+- Pendant traitement, focus reste sur ProgressTracker
+- Tab ne permet pas de naviguer vers d'autres éléments
+
+### Empty/Idle States
+
+**Drop Zone — État Idle :**
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    📤 (icône 48×48)                      │
+│            Déposez votre Grand Livre ici                 │
+│     ou cliquez pour parcourir • .xlsx, .xls, .csv        │
+│              [ Choisir fichier(s) ]                      │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Retry State :**
+- Après erreur, fichiers restent en mémoire
+- Drop zone affiche FileCards existantes + message d'erreur
+- Utilisateur peut supprimer un fichier ou en ajouter un autre
+
+### Pattern Documentation Template
+
+Format standard pour documenter chaque pattern :
+
+```markdown
+## [Pattern Name]
+**Quand :** [Trigger condition]
+**Où :** [Component(s) concerné(s)]
+**Comment :** [Code snippet minimal]
+**Pourquoi :** [Justification UX/WCAG]
+**Test :** [Comment vérifier que c'est bien implémenté]
+```
+
+### Pattern Guidelines Summary
+
+| Pattern | Règle clé | Justification |
+|---|---|---|
+| **1 Primary par écran** | Maximum un bouton prominent | Focus utilisateur |
+| **Double-Submit Prevention** | `disabled` + spinner dès premier clic | Évite duplications |
+| **Skeleton > 100ms** | Afficher skeleton si opération longue | Feedback immédiat |
+| **Debounce Counter** | 150ms debounce sur updates WebSocket | Évite animation spam |
+| **Focus Trap Loading** | Focus reste sur ProgressTracker | Pas de navigation parasite |
+| **Erreur = aide** | Toujours détecté vs attendu + action | Confiance préservée |
+| **Retry conserve fichiers** | Fichiers restent après erreur | Moins de friction |
+| **Couleur ≠ seul signal** | Toujours couleur + icône | WCAG daltonisme |
+| **True Disabled** | `disabled` attribute obligatoire | Vrai blocage navigateur |
