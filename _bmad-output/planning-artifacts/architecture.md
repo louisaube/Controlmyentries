@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3]
+stepsCompleted: [1, 2, 3, 4]
 inputDocuments:
   - "prd.md"
   - "product-brief-Controlmyentries-2026-02-05.md"
@@ -180,8 +180,9 @@ controlmyentries/
 │   │   ├── hooks/           # useWebSocket, useFileUpload
 │   │   └── App.tsx
 │   └── dist/                # Build output → served by FastAPI
-├── requirements.txt
-├── Dockerfile
+├── .replit               # Run command + deployment
+├── replit.nix            # Nix packages
+├── pyproject.toml        # Python dependencies
 └── README.md
 ```
 
@@ -195,4 +196,106 @@ controlmyentries/
 | Build Tool | Vite | Fast HMR, optimized builds |
 | Testing | pytest (back) + Vitest (front) | Native to each ecosystem |
 | Linting | ruff (back) + ESLint (front) | Fast, modern |
+
+## Core Architectural Decisions
+
+### Decision Priority Analysis
+
+**Critical Decisions (Block Implementation) :**
+- Stateless architecture : aucune persistence serveur ✓
+- File validation strategy : whitelist MIME + extension ✓
+- WebSocket + HTTP fallback pour progress ✓
+
+**Important Decisions (Shape Architecture) :**
+- Pydantic pour validation schéma ✓
+- React state local (pas de Redux) ✓
+- Replit pour hosting ✓
+
+**Deferred Decisions (Post-MVP) :**
+- Rate limiting (si abuse détecté)
+- Custom domain
+- Multi-region (si besoin)
+
+### Data Architecture
+
+| Decision | Choice | Rationale |
+|---|---|---|
+| Database | None | Stateless, traitement éphémère |
+| Validation | Pydantic 2.x | FastAPI natif, type safety |
+| Baseline format | JSON versionné | Client-side storage |
+| Temp files | Python tempfile | Auto-cleanup on process |
+
+### Authentication & Security
+
+| Decision | Choice | Rationale |
+|---|---|---|
+| Authentication | None (MVP) | Pas de comptes utilisateurs |
+| Transport | HTTPS | Fourni par Replit |
+| CSP | `default-src 'self'` | Scripts same-origin |
+| CORS | Same-domain only | API et SPA colocalisés |
+| File validation | MIME whitelist | Excel/CSV uniquement |
+
+### API & Communication Patterns
+
+**Endpoints :**
+```
+POST /api/analyze          # Upload GL + baseline → rapport
+POST /api/generate-baseline # Upload GL N-1 → baseline JSON
+GET  /api/health           # Health check
+WS   /ws/progress/{job_id} # Real-time progress
+```
+
+**Error Response Format (RFC 7807) :**
+```json
+{
+  "type": "validation_error",
+  "title": "Colonnes manquantes",
+  "status": 400,
+  "detail": "Colonnes attendues: Date, Compte, Montant"
+}
+```
+
+### Frontend Architecture
+
+| Decision | Choice | Rationale |
+|---|---|---|
+| State management | useState/useReducer | 5 composants, flux linéaire |
+| Data fetching | Native fetch | Pas de cache (stateless) |
+| Routing | None (SPA state machine) | Single page |
+| WebSocket | Native WebSocket API | Simple |
+
+### Infrastructure & Deployment
+
+| Decision | Choice | Rationale |
+|---|---|---|
+| Platform | **Replit (Hacker plan)** | Zéro config, IDE intégré, 2GB RAM |
+| CI/CD | **Replit auto-deploy** | Push GitHub = deploy |
+| Container | **None** | Runtime Nix natif |
+| Config | **replit.nix + .replit** | Standard Replit |
+| Monitoring | **Replit metrics** | Intégré |
+| Secrets | **Replit Secrets** | UI intégrée |
+
+**Configuration Replit :**
+
+`.replit` :
+```toml
+run = "uvicorn api.main:app --host 0.0.0.0 --port 8080"
+entrypoint = "api/main.py"
+
+[nix]
+channel = "stable-23_11"
+
+[deployment]
+run = ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port 8080"]
+```
+
+`replit.nix` :
+```nix
+{ pkgs }: {
+  deps = [
+    pkgs.python311
+    pkgs.nodejs_20
+  ];
+}
+```
 
