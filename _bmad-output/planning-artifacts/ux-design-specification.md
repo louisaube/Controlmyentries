@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 inputDocuments:
   - "prd.md"
   - "product-brief-Controlmyentries-2026-02-05.md"
@@ -698,3 +698,175 @@ Layout minimaliste en colonne unique centrée, 100% du flow visible sans scroll 
 ```
 
 **Pas de HTML showcase séparé** : la simplicité du design ne justifie pas un fichier de 500 lignes. Les wireframes ASCII ci-dessus suffisent pour le MVP.
+
+## User Journey Flows
+
+### Parcours 1 — Sophie, contrôle mensuel (happy path)
+
+**Contexte :** Sophie a déjà son fichier de référence (baseline). Elle revient chaque mois pour analyser son nouveau GL.
+
+```mermaid
+flowchart TD
+    A[Sophie ouvre Controlmyentries] --> B{Session en cours<br>détectée?}
+    B -->|Oui, terminée| C[Affiche résultat précédent]
+    B -->|Oui, en cours| D[Affiche progression]
+    B -->|Non| E{Fichier de référence<br>en localStorage?}
+    E -->|Oui| F[Affiche: Référence 2024 ✓]
+    E -->|Non| G[Affiche: Déposez votre GL]
+    F --> H[Sophie dépose GL novembre]
+    G --> H
+    H --> I{Validation fichier}
+    I -->|KO| J[Message erreur inline]
+    J --> K[Sophie corrige et redépose]
+    K --> I
+    I -->|OK| L[Détection auto: GL à analyser ✓]
+    L --> M[Traitement 5 étapes<br>WebSocket + sessionId]
+    M --> N[Compteur live: X anomalies]
+    N --> O{Traitement terminé}
+    O --> P[12 anomalies détectées]
+    P --> Q[Bouton: Télécharger le rapport]
+    Q --> R[État post-download:<br>Fichiers en mémoire affichés]
+    R --> S{Action suivante?}
+    S -->|Relancer| M
+    S -->|Nouvelle analyse| G
+    S -->|Fermer| T[Fin - résultat stocké 15 min]
+```
+
+**Durée totale :** ~45 min (vs 4h avant)
+
+**Gestion fermeture onglet :**
+- Job continue côté serveur (fire-and-forget)
+- Résultat stocké 15 min (TTL)
+- Si Sophie revient avec même sessionId → affiche résultat
+- Sinon → "Session expirée, veuillez relancer"
+
+---
+
+### Parcours 2 — Sophie, première utilisation (onboarding)
+
+**Contexte :** Sophie découvre l'outil en janvier. Elle doit générer son fichier de référence.
+
+```mermaid
+flowchart TD
+    A[Sophie découvre Controlmyentries] --> B[Page landing: Déposez votre GL]
+    B --> C{Nombre de fichiers?}
+    C -->|1 fichier| D{< 6 mois d'historique?}
+    D -->|Oui| E[Message: Nous recommandons<br>de charger aussi N-1]
+    D -->|Non| F[Traitement avec historique limité<br>+ Badge Confiance limitée]
+    E --> G[Sophie ajoute GL 2024]
+    C -->|2 fichiers| H{Détection auto via dates}
+    G --> H
+    H -->|Même période| I[Erreur: Les deux fichiers<br>couvrent la même période]
+    I --> J[Sophie vérifie ses fichiers]
+    J --> H
+    H -->|Périodes distinctes| K[Fichier 1: 2024 = référence ✓<br>Fichier 2: 2025 = à analyser ✓]
+    K --> L[Traitement complet]
+    F --> L
+    L --> M[Génération baseline:<br>342 nœuds, 12 mois]
+    M --> N[Téléchargement:<br>baseline.json + rapport]
+    N --> O[localStorage: baseline sauvé]
+    O --> P[Février: premier vrai test]
+    P --> Q[3 anomalies dont 1<br>CCA oubliée jamais vue]
+    Q --> R["Moment aha!" ✓]
+```
+
+**Point clé :** Le premier usage génère le fichier de référence. Les usages suivants le consomment.
+
+---
+
+### Parcours 3 — Marc, contexte PME
+
+**Contexte :** Marc est chef comptable d'une PME. GL plus petit (5 000 lignes), mais mêmes besoins.
+
+```mermaid
+flowchart TD
+    A[Marc ouvre Controlmyentries] --> B[Dépose GL PME<br>5 000 lignes, 80 nœuds]
+    B --> C[Traitement ultra-rapide<br>~3 secondes]
+    C --> D[5 alertes détectées]
+    D --> E[Téléchargement rapport]
+    E --> F[Marc ouvre Excel]
+    F --> G[Alerte récurrence:<br>Provision garantie manquante]
+    G --> H[Marc corrige la provision]
+    H --> I[DAF valide la démarche]
+```
+
+**Point clé :** L'outil scale vers le bas. Même pertinence sur petit volume.
+
+---
+
+### Parcours 4 — Sophie, fichier problématique (edge case)
+
+**Contexte :** Sophie uploade un GL avec un format différent.
+
+```mermaid
+flowchart TD
+    A[Sophie dépose GL<br>format inhabituel] --> B{Validation format}
+    B -->|Colonnes manquantes| C[Erreur inline immédiate]
+    C --> D[Message détaillé:<br>Colonnes attendues vs détectées]
+    D --> E[Lien: /aide/format-fichier<br>avec screenshot format attendu]
+    E --> F[Bouton: Réessayer]
+    F --> G[Sophie contacte collègue]
+    G --> H[Obtient le bon export]
+    H --> I[Re-upload fichier correct]
+    I --> J{Validation OK}
+    J --> K[Traitement normal]
+    K --> L[Confiance préservée ✓]
+```
+
+**Point clé :** Rejet gracieux > résultat faux. La confiance est la priorité.
+
+---
+
+### Parcours 5 — DAF, consommateur de résultats
+
+**Contexte :** Le DAF ne touche pas l'outil. Il reçoit le rapport Excel de Sophie.
+
+```mermaid
+flowchart TD
+    A[Sophie envoie rapport<br>par email] --> B[DAF ouvre Excel]
+    B --> C[Onglet Synthèse]
+    C --> D[Métriques visibles:<br>12 détectées, 8 corrigées, 4 classées]
+    D --> E[Mini-glossaire en bas:<br>Définitions des termes]
+    E --> F{Besoin de détail?}
+    F -->|Oui| G[Consulte onglets par catégorie]
+    F -->|Non| H[Valide le travail de Sophie]
+    G --> H
+    H --> I[Réponse email: OK]
+```
+
+**Mini-glossaire inclus dans l'onglet Synthèse :**
+- "Anomalie détectée" = écart statistiquement significatif par rapport à l'historique
+- "Corrigée" = Sophie a validé et traité cette anomalie
+- "Classée faux positif" = variation normale confirmée par Sophie
+
+---
+
+### Journey Patterns
+
+| Pattern | Description | Usage |
+|---|---|---|
+| **Upload → Validation → Feedback** | Chaque upload déclenche validation immédiate avec feedback inline | Tous |
+| **Détection auto via dates** | Le système reconnaît référence vs GL sans configuration | P1, P2 |
+| **Progression visible** | 5 étapes + compteur live pendant traitement | P1, P2, P3 |
+| **Rejet gracieux** | Erreur claire avec données détectées vs attendues + lien aide | P4 |
+| **Session persistante** | sessionId + TTL 15 min pour reprise si fermeture onglet | P1, P2 |
+| **État post-action** | Affichage des fichiers en mémoire après download | P1 |
+| **Livrable = Excel** | Le rapport est le produit final, pas l'UI | Tous |
+
+### Flow Optimization Principles
+
+1. **Zéro étape avant valeur** : pas de formulaire, pas de configuration. Upload → résultat.
+
+2. **Feedback immédiat** : chaque action utilisateur a une réponse visuelle < 200ms.
+
+3. **Erreur = aide** : jamais "Erreur" seul. Toujours colonnes détectées vs attendues + lien `/aide/format-fichier`.
+
+4. **State machine UI** : la page change d'état (idle → processing → complete) sans navigation.
+
+5. **Deux flows distincts** :
+   - Premier usage : génère le fichier de référence
+   - Usages suivants : consomme le fichier de référence
+
+6. **Confiance par transparence** : chaque anomalie montre ses données source. Mini-glossaire pour le DAF.
+
+7. **Résilience session** : fermeture onglet ne perd pas le travail. Job continue, résultat récupérable 15 min.
