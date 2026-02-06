@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { UploadedFile, ErrorData } from '@/types'
+import { UploadedFile } from '@/types'
 
 interface UseFileUploadReturn {
   files: UploadedFile[]

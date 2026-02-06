@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     analysis_timeout_sec: int = 300
     ws_heartbeat_sec: int = 30
     host: str = "0.0.0.0"
-    port: int = 8080
+    port: int = 5000
 
     class Config:
         env_file = ".env"
