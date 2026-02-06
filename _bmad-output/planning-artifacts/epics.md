@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2]
+stepsCompleted: [1, 2, 3]
 inputDocuments:
   - "prd.md"
   - "architecture.md"
@@ -215,3 +215,525 @@ Les prospects découvrent le produit.
 Tous les utilisateurs peuvent utiliser l'outil.
 **FRs covered:** FR30, FR32, FR33
 **Scope:** WCAG 2.2 AAA, clavier, ARIA, focus management
+
+---
+
+## Epic 1: Project Skeleton
+
+### Story 1.1: Initialize Replit Project Structure
+
+As a **developer**,
+I want **a properly configured Replit project with Python backend and React frontend structure**,
+So that **I can start implementing features immediately**.
+
+**Acceptance Criteria:**
+
+**Given** a new Replit project
+**When** I open the workspace
+**Then** the following structure exists:
+- `api/main.py`, `api/app.py`, `api/routes.py`
+- `api/core/config.py` with Pydantic settings
+- `frontend/` with Vite React template
+- `.replit` and `replit.nix` configured
+- `pyproject.toml` and `package.json`
+**And** `make dev` starts the development server
+
+---
+
+### Story 1.2: Health Check Endpoint
+
+As a **operations engineer**,
+I want **a health check endpoint**,
+So that **I can monitor the application availability**.
+
+**Acceptance Criteria:**
+
+**Given** the API is running
+**When** I send GET `/api/health`
+**Then** I receive HTTP 200 with `{"status": "ok"}`
+
+---
+
+### Story 1.3: Frontend Skeleton with Static Serving
+
+As a **developer**,
+I want **the React frontend skeleton served by FastAPI**,
+So that **I have a working full-stack setup**.
+
+**Acceptance Criteria:**
+
+**Given** the frontend is built
+**When** I access the root URL `/`
+**Then** the React app loads with "Controlmyentries" title
+
+---
+
+## Epic 2: File Upload & Validation
+
+### Story 2.1: DropZone Component
+
+As a **user**,
+I want **to drag and drop my GL file onto the page**,
+So that **I can easily upload my data**.
+
+**Acceptance Criteria:**
+
+**Given** I am on the main page
+**When** I drag a file over the drop zone
+**Then** the zone highlights to show it's active
+**When** I drop an Excel file (.xlsx, .xls, .csv)
+**Then** the file is accepted and shown in a FileCard
+**And** a "Choisir fichier(s)" button is available as alternative (FR31)
+
+---
+
+### Story 2.2: File Validation Service
+
+As a **user**,
+I want **my file to be validated for correct format**,
+So that **I know immediately if something is wrong**.
+
+**Acceptance Criteria:**
+
+**Given** I upload a file
+**When** the file has columns: Compte Général, Section Analytique, Montant, Date
+**Then** validation passes and FileCard shows green checkmark
+
+**Given** I upload a file with missing columns
+**When** validation runs
+**Then** I see error message: "Colonnes attendues: X, Y. Détectées: A, B" (FR3)
+
+---
+
+### Story 2.3: Upload API Endpoint
+
+As a **developer**,
+I want **a POST /api/analyze endpoint accepting multipart files**,
+So that **the frontend can submit files for processing**.
+
+**Acceptance Criteria:**
+
+**Given** a valid file is uploaded
+**When** POST /api/analyze is called
+**Then** the file is received and validated
+**And** a job_id is returned for progress tracking
+
+---
+
+## Epic 3: Baseline Management
+
+### Story 3.1: Generate Baseline Endpoint
+
+As a **user**,
+I want **to generate a baseline from my N-1 GL**,
+So that **I can use it for future monthly analyses**.
+
+**Acceptance Criteria:**
+
+**Given** I upload a GL N-1 file (12 months of data)
+**When** POST /api/generate-baseline is called
+**Then** statistics are calculated per node (Compte G × Analytique)
+**And** a baseline.json file is generated with version and date (FR5, FR6)
+
+---
+
+### Story 3.2: Baseline Download
+
+As a **user**,
+I want **to download my generated baseline**,
+So that **I can save it locally and reuse it**.
+
+**Acceptance Criteria:**
+
+**Given** baseline generation is complete
+**When** I click "Télécharger la baseline"
+**Then** a JSON file downloads with format: `{"version": "1.0", "generated": "...", "nodes": [...]}`
+
+---
+
+### Story 3.3: Baseline Upload for Analysis
+
+As a **user**,
+I want **to upload my saved baseline along with current GL**,
+So that **the analysis can use my reference data**.
+
+**Acceptance Criteria:**
+
+**Given** I have a baseline.json file
+**When** I upload it with my current GL
+**Then** both files are accepted
+**And** the system auto-detects which is which via dates (FR4)
+
+---
+
+## Epic 4: Anomaly Detection Engine
+
+### Story 4.1: Pass 1 - Disappearance Detector
+
+As a **user**,
+I want **the system to detect nodes that disappeared**,
+So that **I can find missing entries**.
+
+**Acceptance Criteria:**
+
+**Given** a node was active in previous months
+**When** it's absent in month M
+**Then** a "Disparition" anomaly is flagged (FR8)
+
+---
+
+### Story 4.2: Pass 1 - Appearance Detector
+
+As a **user**,
+I want **the system to detect new nodes**,
+So that **I can review unexpected entries**.
+
+**Acceptance Criteria:**
+
+**Given** a node didn't exist in history
+**When** it appears in month M with significant amount
+**Then** an "Apparition" anomaly is flagged (FR9)
+
+---
+
+### Story 4.3: Pass 1 - Variation Detector
+
+As a **user**,
+I want **the system to detect brutal variations**,
+So that **I can investigate unusual changes**.
+
+**Acceptance Criteria:**
+
+**Given** a node has historical values
+**When** current month varies > 20% from trend
+**Then** a "Variation" anomaly is flagged (FR10)
+
+---
+
+### Story 4.4: Pass 1 - Recurrence Detector
+
+As a **user**,
+I want **the system to detect broken recurrence patterns**,
+So that **I don't miss regular entries**.
+
+**Acceptance Criteria:**
+
+**Given** a node had regular entries (e.g., monthly provision)
+**When** the pattern breaks in month M
+**Then** a "Récurrence interrompue" anomaly is flagged (FR11)
+
+---
+
+### Story 4.5: Pass 2 - Z-Score Calculator
+
+As a **user**,
+I want **statistical calibration of anomalies**,
+So that **I get fewer false positives**.
+
+**Acceptance Criteria:**
+
+**Given** a baseline with node statistics
+**When** analysis runs
+**Then** Z-score is calculated per node using its own mean/stddev (FR12)
+**And** M vs M-12 comparison neutralizes seasonality (FR13)
+**And** anomalies with |Z| > 2 are flagged (FR14)
+
+---
+
+### Story 4.6: Pass 2 - Degraded Mode
+
+As a **user**,
+I want **the system to work even without sufficient baseline**,
+So that **I can still get some results**.
+
+**Acceptance Criteria:**
+
+**Given** baseline has < 6 months of data
+**When** analysis runs
+**Then** only Pass 1 results are shown
+**And** a "Confiance limitée" badge is displayed (FR15)
+
+---
+
+## Epic 5: Report Generation
+
+### Story 5.1: Excel Multi-Tab Report
+
+As a **user**,
+I want **an Excel report with one tab per anomaly**,
+So that **I can review each issue separately**.
+
+**Acceptance Criteria:**
+
+**Given** anomalies are detected
+**When** report is generated
+**Then** Excel file has one tab per anomaly type (FR16)
+
+---
+
+### Story 5.2: Level 1 - Factual Statement
+
+As a **user**,
+I want **each anomaly tab to show the factual finding**,
+So that **I understand what was detected**.
+
+**Acceptance Criteria:**
+
+**Given** an anomaly tab
+**When** I open it
+**Then** I see: node identifier, anomaly type, current value, expected value (FR17)
+
+---
+
+### Story 5.3: Level 2 - Statistical Data
+
+As a **user**,
+I want **to see the statistical basis for each anomaly**,
+So that **I can judge its significance**.
+
+**Acceptance Criteria:**
+
+**Given** an anomaly with Z-score
+**When** I view the tab
+**Then** I see: Z-score, mean, stddev, historical values (FR18)
+
+---
+
+### Story 5.4: Synthesis Tab
+
+As a **DAF**,
+I want **a summary tab with aggregated metrics**,
+So that **I can quickly assess the control quality**.
+
+**Acceptance Criteria:**
+
+**Given** analysis is complete
+**When** I open the Synthèse tab
+**Then** I see: total anomalies, by type, severity distribution (FR19)
+
+---
+
+### Story 5.5: Report Download
+
+As a **user**,
+I want **to download the Excel report**,
+So that **I can work with it offline**.
+
+**Acceptance Criteria:**
+
+**Given** report generation is complete
+**When** I click "Télécharger le rapport"
+**Then** Excel file downloads immediately (FR20)
+
+---
+
+## Epic 6: Full Analysis Flow
+
+### Story 6.1: Integrated Analysis Pipeline
+
+As a **Sophie**,
+I want **to submit baseline + GL and get a complete report**,
+So that **I can do my monthly control end-to-end**.
+
+**Acceptance Criteria:**
+
+**Given** I upload baseline.json + current GL
+**When** I click "Analyser"
+**Then** validation → Pass 1 → Pass 2 → Pass 3 runs in sequence
+**And** I can download the report when complete (FR7)
+
+---
+
+## Epic 7: Real-Time Feedback
+
+### Story 7.1: WebSocket Progress Connection
+
+As a **developer**,
+I want **a WebSocket endpoint for progress updates**,
+So that **the frontend can show real-time feedback**.
+
+**Acceptance Criteria:**
+
+**Given** analysis starts
+**When** client connects to /ws/progress/{job_id}
+**Then** messages are sent for each step
+
+---
+
+### Story 7.2: ProgressTracker Component
+
+As a **user**,
+I want **to see a progress bar during processing**,
+So that **I know the system is working**.
+
+**Acceptance Criteria:**
+
+**Given** analysis is running
+**When** I watch the screen
+**Then** I see 5 steps: Validation, Pass 1, Pass 2, Pass 3, Terminé (FR21, FR22)
+**And** current step is highlighted with animation
+
+---
+
+### Story 7.3: Live Anomaly Counter
+
+As a **user**,
+I want **to see anomalies count as they're detected**,
+So that **I have immediate feedback**.
+
+**Acceptance Criteria:**
+
+**Given** Pass 1/2 is running
+**When** anomalies are found
+**Then** counter updates live with bounce animation
+
+---
+
+### Story 7.4: Processing Time Display
+
+As a **user**,
+I want **to see the total processing time**,
+So that **I know how fast the analysis was**.
+
+**Acceptance Criteria:**
+
+**Given** analysis completes
+**When** ResultCard appears
+**Then** total time is displayed: "Analyse terminée en 24s" (FR23)
+
+---
+
+## Epic 8: Trust & Transparency
+
+### Story 8.1: Confidence Index
+
+As a **user**,
+I want **to see a confidence index for the analysis**,
+So that **I know how reliable the results are**.
+
+**Acceptance Criteria:**
+
+**Given** analysis has baseline
+**When** results are shown
+**Then** confidence % is displayed based on months of history
+**And** if < 6 months: "Confiance limitée" badge (FR24)
+
+---
+
+### Story 8.2: Permanent Disclaimer
+
+As a **user**,
+I want **to see a disclaimer about the tool's limitations**,
+So that **I don't over-rely on automated detection**.
+
+**Acceptance Criteria:**
+
+**Given** I'm on the tool page
+**When** I view results
+**Then** I see: "Aide à la détection, pas certificat d'absence d'anomalie" (FR25)
+
+---
+
+### Story 8.3: Statistical Transparency
+
+As a **user**,
+I want **to see the data behind each detection**,
+So that **I can verify the tool's reasoning**.
+
+**Acceptance Criteria:**
+
+**Given** an anomaly is detected
+**When** I view details
+**Then** I see all statistical inputs (mean, stddev, Z-score, historical values) (FR26)
+
+---
+
+## Epic 9: Landing Page
+
+### Story 9.1: SEO-Optimized Landing Page
+
+As a **prospect**,
+I want **to find Controlmyentries via search**,
+So that **I can discover the tool**.
+
+**Acceptance Criteria:**
+
+**Given** a search for "contrôle comptable automatique"
+**When** results appear
+**Then** Controlmyentries landing page is indexed (FR27)
+**And** Lighthouse SEO score ≥ 90 (FR28)
+
+---
+
+### Story 9.2: Landing Page Content
+
+As a **prospect**,
+I want **to understand what the tool does**,
+So that **I can decide if it's useful**.
+
+**Acceptance Criteria:**
+
+**Given** I land on the page
+**When** I read the content
+**Then** I understand: problem, solution, how it works, testimonials
+**And** meta tags and Open Graph are set for LinkedIn sharing
+
+---
+
+### Story 9.3: Call to Action
+
+As a **prospect**,
+I want **a clear CTA to try the tool**,
+So that **I can start using it**.
+
+**Acceptance Criteria:**
+
+**Given** I'm on the landing page
+**When** I click "Essayer gratuitement"
+**Then** I'm redirected to the tool (FR29)
+
+---
+
+## Epic 10: Accessibility Polish
+
+### Story 10.1: Keyboard Navigation
+
+As a **keyboard user**,
+I want **to use the entire tool without a mouse**,
+So that **I can complete my workflow**.
+
+**Acceptance Criteria:**
+
+**Given** I'm on the tool
+**When** I use Tab, Enter, Escape
+**Then** I can: upload files, start analysis, download report (FR30)
+**And** focus is always visible with 2px ring
+
+---
+
+### Story 10.2: Screen Reader Announcements
+
+As a **screen reader user**,
+I want **state changes to be announced**,
+So that **I know what's happening**.
+
+**Acceptance Criteria:**
+
+**Given** I use a screen reader
+**When** progress updates or errors occur
+**Then** I hear announcements via aria-live regions (FR32)
+
+---
+
+### Story 10.3: Error Accessibility
+
+As a **user with disabilities**,
+I want **errors to be properly linked to their source**,
+So that **I can fix issues easily**.
+
+**Acceptance Criteria:**
+
+**Given** a validation error occurs
+**When** it's displayed
+**Then** it's linked to the input via aria-describedby (FR33)
+**And** role="alert" announces it immediately
