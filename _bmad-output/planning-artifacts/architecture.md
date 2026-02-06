@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5]
 inputDocuments:
   - "prd.md"
   - "product-brief-Controlmyentries-2026-02-05.md"
@@ -298,4 +298,186 @@ run = ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port 8080"]
   ];
 }
 ```
+
+## Implementation Patterns & Consistency Rules
+
+### Pattern Categories Defined
+
+**Conflits potentiels identifiés :** 12 zones où les agents AI pourraient décider différemment
+
+### Naming Patterns
+
+**Python (Backend) :**
+
+| Élément | Convention | Exemple |
+|---|---|---|
+| Fichiers | snake_case | `file_validator.py` |
+| Classes | PascalCase | `class AnalysisResult` |
+| Fonctions | snake_case | `def validate_file()` |
+| Variables | snake_case | `anomaly_count` |
+| Constants | UPPER_SNAKE | `MAX_FILE_SIZE` |
+
+**TypeScript (Frontend) :**
+
+| Élément | Convention | Exemple |
+|---|---|---|
+| Fichiers composants | PascalCase | `DropZone.tsx` |
+| Fichiers hooks | camelCase | `useWebSocket.ts` |
+| Composants | PascalCase | `function DropZone()` |
+| Variables/fonctions | camelCase | `const anomalyCount` |
+| Types/Interfaces | PascalCase | `interface AnalysisState` |
+
+**API :**
+
+| Élément | Convention | Exemple |
+|---|---|---|
+| Endpoints | kebab-case, pluriel si collection | `/api/analyze`, `/api/health` |
+| Query params | snake_case | `?job_id=123` |
+| JSON fields | snake_case | `{ "anomaly_count": 12 }` |
+
+### Structure Patterns
+
+**Backend (`api/`) :**
+```
+api/
+├── main.py           # FastAPI app, routes, static mount
+├── core/
+│   ├── config.py     # Pydantic settings
+│   └── websocket.py  # ConnectionManager
+├── services/
+│   ├── validator.py  # File validation
+│   ├── pass1.py      # Binary detectors
+│   ├── pass2.py      # Z-score analysis
+│   └── pass3.py      # Excel generation
+├── models/
+│   ├── baseline.py   # Pydantic schemas
+│   └── analysis.py   # Response models
+└── tests/
+    └── test_*.py     # Tests par service
+```
+
+**Frontend (`frontend/src/`) :**
+```
+src/
+├── components/
+│   ├── DropZone.tsx
+│   ├── FileCard.tsx
+│   ├── ProgressTracker.tsx
+│   ├── ResultCard.tsx
+│   └── StatusMessage.tsx
+├── hooks/
+│   ├── useWebSocket.ts
+│   └── useFileUpload.ts
+├── types/
+│   └── index.ts      # Shared types
+├── App.tsx
+└── main.tsx
+```
+
+### Format Patterns
+
+**API Response (succès) :**
+```json
+{
+  "success": true,
+  "data": { ... }
+}
+```
+
+**API Response (erreur RFC 7807) :**
+```json
+{
+  "type": "validation_error",
+  "title": "Colonnes manquantes",
+  "status": 400,
+  "detail": "Colonnes attendues: Date, Compte, Montant"
+}
+```
+
+**WebSocket Message :**
+```json
+{
+  "step": 3,
+  "step_name": "Analyse Z-score",
+  "progress": 0.6,
+  "anomalies_found": 7,
+  "status": "processing"
+}
+```
+
+**Dates :** ISO 8601 (`"2025-01-15T10:30:00Z"`)
+
+### Communication Patterns
+
+**État Frontend (TypeScript) :**
+```typescript
+type AppState = 'idle' | 'uploading' | 'processing' | 'complete' | 'error';
+
+interface AppContext {
+  state: AppState;
+  files: UploadedFile[];
+  progress: ProgressData | null;
+  result: AnalysisResult | null;
+  error: ErrorData | null;
+}
+```
+
+**Transitions d'état valides :**
+```
+idle → uploading → processing → complete
+                       ↓
+idle ← ─────────── error
+```
+
+### Process Patterns
+
+**Error Handling Backend :**
+```python
+# Toujours utiliser HTTPException avec RFC 7807
+raise HTTPException(
+    status_code=400,
+    detail={
+        "type": "validation_error",
+        "title": "Format invalide",
+        "detail": f"Colonnes attendues: {expected}, détectées: {found}"
+    }
+)
+```
+
+**Error Handling Frontend :**
+```typescript
+// Toujours setState error + afficher StatusMessage
+catch (err) {
+  setState('error');
+  setError({ type: 'network', message: err.message });
+}
+```
+
+**Loading States :**
+- Backend : jamais de spinner côté serveur
+- Frontend : skeleton si > 100ms, sinon rien
+
+### Enforcement Guidelines
+
+**Tous les agents AI DOIVENT :**
+
+1. Utiliser snake_case pour le Python, camelCase pour le TypeScript
+2. Retourner RFC 7807 pour toutes les erreurs API
+3. Utiliser les types Pydantic (back) et TypeScript (front) — jamais de `any`
+4. Placer les tests dans `api/tests/`
+5. Utiliser `tempfile` pour les fichiers temporaires
+
+**Vérification :**
+- `ruff check` (Python) + `eslint` (TypeScript) en pre-commit
+- Types stricts : `mypy --strict` + `tsc --strict`
+
+### Anti-Patterns à éviter
+
+| Anti-Pattern | Correct |
+|---|---|
+| `any` en TypeScript | Type explicite |
+| `print()` pour debug | `logging.info()` |
+| Path hardcodé `/tmp/file.xlsx` | `tempfile.NamedTemporaryFile()` |
+| Catch exception silencieux | Raise HTTPException avec detail |
+| `useState` pour chaque champ | Un seul `useReducer` pour l'état global |
 
