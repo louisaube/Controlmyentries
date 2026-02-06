@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 inputDocuments:
   - "prd.md"
   - "product-brief-Controlmyentries-2026-02-05.md"
@@ -477,3 +477,107 @@ Tout est basé sur des patterns connus. L'innovation est dans la combinaison et 
 | 2 fichiers identiques | "Les deux fichiers semblent identiques. Vérifiez votre sélection." | Réessayer |
 | Dates incohérentes | "Les dates du fichier 2 sont antérieures au fichier 1. Vérifiez l'ordre." | Réessayer |
 | Erreur serveur | "Une erreur est survenue. Réessayez dans quelques instants." | Réessayer + Contact |
+
+## Visual Design Foundation
+
+### Color System
+
+**Palette WCAG AAA (définie à l'étape 6) :**
+
+| Token | Hex | Usage | Ratio sur blanc |
+|---|---|---|---|
+| `primary` | #1a1a2e | Texte principal, titres | 15.4:1 ✓ |
+| `secondary` | #4a4a6a | Texte secondaire, labels | 7.1:1 ✓ |
+| `accent` | #004080 | Boutons, liens, focus | 9.5:1 ✓ |
+| `success` | #0a5c32 | Validations, checkmarks | 8.2:1 ✓ |
+| `warning` | #7c4a03 | Alertes, avertissements | 7.3:1 ✓ |
+| `error` | #991b1b | Erreurs, rejets | 7.8:1 ✓ |
+| `surface` | #ffffff | Fond principal | — |
+| `muted` | #f5f5f7 | Fond secondaire, hover | — |
+
+**Principes couleur :**
+- Pas de couleur seule pour transmettre l'information (WCAG)
+- Toujours combiner couleur + icône ou forme
+- Palette sobre = identité "sérieux comptable"
+
+### Typography System
+
+**Font stack :**
+```css
+font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+```
+
+**Rationale :** Inter est optimisé pour les écrans, hauteur d'x généreuse, excellente lisibilité. Segoe UI comme fallback Windows natif.
+
+**Type scale (base 16px) :**
+
+| Token | Taille | Line-height | Usage |
+|---|---|---|---|
+| `text-xs` | 12px / 0.75rem | 1.5 | Labels secondaires, hints |
+| `text-sm` | 14px / 0.875rem | 1.5 | Texte secondaire, metadata |
+| `text-base` | 16px / 1rem | 1.5 | Texte principal, paragraphes |
+| `text-lg` | 18px / 1.125rem | 1.4 | Texte emphasized |
+| `text-xl` | 20px / 1.25rem | 1.3 | Sous-titres |
+| `text-2xl` | 24px / 1.5rem | 1.25 | Titres de section |
+| `text-3xl` | 30px / 1.875rem | 1.2 | Titre principal page |
+| `text-4xl` | 36px / 2.25rem | 1.1 | Hero headline (landing) |
+
+**Font weights :**
+- `font-normal` (400) : texte courant
+- `font-medium` (500) : labels, boutons
+- `font-semibold` (600) : titres, emphasis
+
+**Pas de font-bold (700)** — on garde un ton sobre, pas d'agressivité visuelle.
+
+### Spacing & Layout Foundation
+
+**Base unit : 4px**
+
+Tous les espacements sont des multiples de 4px pour une grille cohérente.
+
+| Token | Valeur | Usage |
+|---|---|---|
+| `space-1` | 4px | Micro-espacement (icône-texte) |
+| `space-2` | 8px | Espacement serré (inline elements) |
+| `space-3` | 12px | Espacement standard (form fields) |
+| `space-4` | 16px | Espacement moyen (entre groupes) |
+| `space-6` | 24px | Espacement large (sections) |
+| `space-8` | 32px | Espacement très large |
+| `space-12` | 48px | Séparateur de sections majeures |
+| `space-16` | 64px | Marges externes page |
+
+**Layout principles :**
+
+1. **Single column centered** : pas de sidebar, pas de navigation complexe. Contenu centré, max-width 800px pour la lisibilité.
+
+2. **Vertical rhythm** : tout est empilé verticalement. Drop zone → progression → résultat. Aucun layout horizontal complexe.
+
+3. **Generous whitespace** : l'espace vide communique le calme et la confiance. Pas de densité "dashboard B2B".
+
+4. **Desktop-first breakpoints :**
+   - `≥1024px` : layout optimal, drop zone 60% viewport height
+   - `768-1023px` : tablet, drop zone 50% viewport height
+   - `<768px` : mobile (non ciblé MVP, mais fonctionnel)
+
+**Grid : non utilisé.** La simplicité du layout (single column) ne nécessite pas de système de grille. Flexbox suffit.
+
+### Accessibility Considerations
+
+**WCAG 2.2 AAA compliance :**
+
+| Critère | Cible | Implementation |
+|---|---|---|
+| Contraste texte | ≥ 7:1 | Tous tokens vérifiés (voir Color System) |
+| Contraste UI | ≥ 3:1 | Bordures, icônes : `secondary` sur `surface` |
+| Target size | ≥ 24×24px | `min-w-touch min-h-touch` sur tous les interactifs |
+| Focus visible | Toujours visible | `focus:ring-2 focus:ring-accent focus:ring-offset-2` |
+| Motion | Respecter prefers-reduced-motion | Désactiver animations si système le demande |
+
+**Principes additionnels :**
+- Pas de texte en image (tout est HTML)
+- Pas de CAPTCHA (pas d'inscription)
+- Navigation clavier complète (Tab, Enter, Escape)
+- `aria-live="polite"` pour les mises à jour dynamiques (compteur, progression)
+- Skip links non nécessaires (single page, pas de navigation)
+
+**Taille de police minimum :** 12px (labels secondaires). Texte principal jamais sous 16px.
