@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2]
+stepsCompleted: [1, 2, 3]
 inputDocuments:
   - "prd.md"
   - "product-brief-Controlmyentries-2026-02-05.md"
@@ -117,4 +117,82 @@ Client ──HTTP GET──> Server (download report)
 | **M3** | Passe 2 : Z-score + baseline | ✓ |
 | **M4** | Passe 3 : Excel multi-onglets | ✓ |
 | **M5** | WebSocket progress, landing, WCAG audit | ✓ |
+
+## Starter Template Evaluation
+
+### Primary Technology Domain
+
+**Full-stack Web App SaaS stateless** — Backend Python/FastAPI + Frontend React SPA
+
+### Starter Options Considered
+
+**Backend :**
+- FastAPI vanilla (structure manuelle) → **Sélectionné** — simplicité maximale pour app stateless
+- tiangolo/full-stack-fastapi-template → Rejeté — inclut PostgreSQL, Auth, migrations (inutile)
+
+**Frontend :**
+- Vite + React + TypeScript → **Sélectionné** — build rapide, moderne, léger
+- Create React App → Rejeté — déprécié, build lent
+- Next.js → Rejeté — SSR/SSG inutile pour SPA servie en static
+
+### Selected Approach: Minimal Custom Structure
+
+**Rationale :**
+- App stateless simple = pas besoin de starter complexe
+- FastAPI vanilla + Vite React = contrôle total, zéro cruft
+- Monolith : FastAPI sert le build React en static
+
+### Initialization Commands
+
+**Backend :**
+```bash
+mkdir -p api/{core,services,models}
+pip install fastapi uvicorn[standard] python-multipart polars scipy xlsxwriter websockets
+```
+
+**Frontend :**
+```bash
+npm create vite@latest frontend -- --template react-ts
+cd frontend && npm install tailwindcss postcss autoprefixer react-dropzone
+npx tailwindcss init -p
+```
+
+### Project Structure
+
+```
+controlmyentries/
+├── api/
+│   ├── main.py              # FastAPI app + routes
+│   ├── core/
+│   │   ├── config.py        # Settings
+│   │   └── websocket.py     # WS manager
+│   ├── services/
+│   │   ├── validator.py     # File validation
+│   │   ├── pass1.py         # Binary tests
+│   │   ├── pass2.py         # Z-score
+│   │   └── pass3.py         # Excel generation
+│   └── models/
+│       ├── baseline.py      # Baseline schema
+│       └── analysis.py      # Analysis result
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # 5 UI components
+│   │   ├── hooks/           # useWebSocket, useFileUpload
+│   │   └── App.tsx
+│   └── dist/                # Build output → served by FastAPI
+├── requirements.txt
+├── Dockerfile
+└── README.md
+```
+
+### Architectural Decisions Provided
+
+| Decision | Choice | Rationale |
+|---|---|---|
+| Language Backend | Python 3.11+ | Polars/scipy ecosystem |
+| Language Frontend | TypeScript | Type safety |
+| Styling | Tailwind CSS | Design tokens définis UX spec |
+| Build Tool | Vite | Fast HMR, optimized builds |
+| Testing | pytest (back) + Vitest (front) | Native to each ecosystem |
+| Linting | ruff (back) + ESLint (front) | Fast, modern |
 
