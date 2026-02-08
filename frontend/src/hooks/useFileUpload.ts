@@ -3,7 +3,7 @@ import { UploadedFile } from '@/types'
 
 interface UseFileUploadReturn {
   files: UploadedFile[]
-  addFiles: (newFiles: File[]) => void
+  addFiles: (newFiles: File[]) => UploadedFile[]
   removeFile: (id: string) => void
   updateFileStatus: (id: string, status: UploadedFile['status'], errorMessage?: string) => void
   clearFiles: () => void
@@ -26,7 +26,7 @@ function detectFileType(file: File): 'gl' | 'baseline' {
 export function useFileUpload(): UseFileUploadReturn {
   const [files, setFiles] = useState<UploadedFile[]>([])
 
-  const addFiles = useCallback((newFiles: File[]) => {
+  const addFiles = useCallback((newFiles: File[]): UploadedFile[] => {
     const uploadedFiles: UploadedFile[] = newFiles.map((file) => ({
       id: generateId(),
       name: file.name,
@@ -35,6 +35,7 @@ export function useFileUpload(): UseFileUploadReturn {
       status: 'pending',
     }))
     setFiles((prev) => [...prev, ...uploadedFiles])
+    return uploadedFiles
   }, [])
 
   const removeFile = useCallback((id: string) => {

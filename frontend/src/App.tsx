@@ -9,16 +9,30 @@ function App() {
 
   const handleFilesAccepted = async (acceptedFiles: File[]) => {
     setError(null)
-    addFiles(acceptedFiles)
+    const uploadedFiles = addFiles(acceptedFiles)
 
-    // Simulate validation (will be replaced with API call)
-    for (const file of acceptedFiles) {
-      const fileId = files.find(f => f.name === file.name)?.id
-      if (fileId) {
-        // Simulate async validation
-        setTimeout(() => {
+    // Validate each file via backend API
+    for (let i = 0; i < acceptedFiles.length; i++) {
+      const rawFile = acceptedFiles[i]
+      const fileId = uploadedFiles[i].id
+
+      try {
+        const formData = new FormData()
+        formData.append('file', rawFile)
+        const response = await fetch('/api/validate', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (response.ok) {
           updateFileStatus(fileId, 'validated')
-        }, 500)
+        } else {
+          const errorData = await response.json()
+          const message = errorData.detail?.detail || 'Validation echouee'
+          updateFileStatus(fileId, 'error', message)
+        }
+      } catch {
+        updateFileStatus(fileId, 'error', 'Erreur de connexion au serveur')
       }
     }
   }
